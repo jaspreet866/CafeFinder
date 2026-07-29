@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { useSearchParams, Link, useNavigate, useParams } from "react-router-dom";
 import { Rating } from "react-simple-star-rating";
 import AOS from "aos";
@@ -30,21 +30,7 @@ export const PlaceView = () => {
     const params = useParams();
     const prr = pr.get("id") || params.id;
 
-    useEffect(() => {
-        if (prr) {
-            if (!id) {
-                showInfo("Login Recommended", "Login to add places to your wishlist.")
-            }
-            show();
-            show2();
-        }
-    }, [prr]);
-
-    useEffect(() => {
-        AOS.refresh();
-    }, [name, showreview]);
-
-    const show = async () => {
+    const show = useCallback(async () => {
         const result = await fetch(`http://localhost:9000/api/showplace2/${prr}`);
 
         const res = await result.json();
@@ -64,7 +50,31 @@ export const PlaceView = () => {
             setaddress(res.data.Address)
             settype(res.data.Type)
         }
-    };
+    }, [prr]);
+
+    const show2 = useCallback(async () => {
+        const result = await fetch(`http://localhost:9000/api/getreview/${prr}`);
+
+        const res = await result.json();
+
+        if (res.statuscode === 1) {
+            setshowreview(res.data);
+        }
+    }, [prr]);
+
+    useEffect(() => {
+        if (prr) {
+            if (!id) {
+                showInfo("Login Recommended", "Login to add places to your wishlist.")
+            }
+            show();
+            show2();
+        }
+    }, [id, prr, show, show2]);
+
+    useEffect(() => {
+        AOS.refresh();
+    }, [name, showreview]);
 
     const handleRating = (rate) => {
         setRating2(rate);
@@ -96,16 +106,6 @@ export const PlaceView = () => {
             setuser("");
             setusermail("");
             setmsg("");
-        }
-    };
-
-    const show2 = async () => {
-        const result = await fetch(`http://localhost:9000/api/getreview/${prr}`);
-
-        const res = await result.json();
-
-        if (res.statuscode === 1) {
-            setshowreview(res.data);
         }
     };
 

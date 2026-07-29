@@ -1,4 +1,3 @@
-import logo from './logo.svg';
 import './App.css';
 import { useState } from 'react';
 import { Header } from './header';
@@ -34,7 +33,7 @@ if (info) {
         setutype(decode.usrtype)
       }
     }
-})
+}, [])
 
   useEffect(() => {
     AOS.init({

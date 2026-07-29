@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react"
+import { useCallback, useContext, useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { Context } from "./usecontext"
 import { showInfo } from "./alerts"
@@ -8,14 +8,7 @@ export const Wishlist=()=>{
 const [d,setd]=useState([])
 const{id}=useContext(Context)
 
-useEffect(()=>{
-    if(id){
-        show()
-    }
-},[id])
-
-
-const show=async()=>{
+const show = useCallback(async () => {
     const result=await fetch(`http://localhost:9000/api/favourite/${id}`,{
         method:"get"
     })
@@ -28,7 +21,13 @@ const show=async()=>{
             showInfo("Wishlist Empty", "Save places from the detail page to see them here.")
         }
     }
-}
+}, [id])
+
+useEffect(()=>{
+    if(id){
+        show()
+    }
+},[id, show])
 
 
     return(
