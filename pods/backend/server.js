@@ -65,6 +65,7 @@ const getLocalChatReply = (message = "") => {
 app.use(cors({
     origin: [
         "https://cafefinder-u2me.onrender.com",
+        "https://cafe-finder-amber.vercel.app",
         "http://localhost:3000"
     ]
 }))
