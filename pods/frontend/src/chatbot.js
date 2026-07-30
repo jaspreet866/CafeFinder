@@ -20,7 +20,7 @@ export const Chatbot = () => {
     setLoading(true)
 
     try {
-      const result = await fetch("http://localhost:9000/api/chat", {
+      const result = await fetch("https://cafefinder-u2me.onrender.com/api/chat", {
         method: "POST",
         body: JSON.stringify({ message: input }),
         headers: {

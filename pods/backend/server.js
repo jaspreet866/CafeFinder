@@ -62,7 +62,12 @@ const getLocalChatReply = (message = "") => {
     return "I did not fully understand that. Please ask about booking a room, reserving a coworking space, wishlist, login, prices, or dates."
 }
 
-app.use(cors())
+app.use(cors({
+    origin: [
+        "https://cafefinder-u2me.onrender.com",
+        "http://localhost:3000"
+    ]
+}))
 app.use(express.json())
 
 const port = process.env.PORT || 9000

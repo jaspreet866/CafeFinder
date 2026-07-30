@@ -11,7 +11,7 @@ export const BookRoom = () => {
 
     const bookRoom = async (e) => {
         e.preventDefault()
-        const result = await fetch("http://localhost:9000/api/hotel", {
+        const result = await fetch("https://cafefinder-u2me.onrender.com/api/hotel", {
             method: "post",
             body: JSON.stringify({ name, email, room, checkin, checkout, type }),
             headers: { "Content-type": "application/json;charset=UTF-8" }

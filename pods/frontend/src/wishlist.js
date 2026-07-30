@@ -9,7 +9,7 @@ const [d,setd]=useState([])
 const{id}=useContext(Context)
 
 const show = useCallback(async () => {
-    const result=await fetch(`http://localhost:9000/api/favourite/${id}`,{
+    const result=await fetch(`https://cafefinder-u2me.onrender.com/api/favourite/${id}`,{
         method:"get"
     })
     if(result){

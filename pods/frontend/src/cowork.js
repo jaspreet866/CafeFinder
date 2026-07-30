@@ -11,7 +11,7 @@ const [type,settype]=useState("")
 
 const add=async(e)=>{
     e.preventDefault()
-    const result=await fetch("http://localhost:9000/api/cowork",{
+    const result=await fetch("https://cafefinder-u2me.onrender.com/api/cowork",{
         method:"post",
         body:JSON.stringify({name,email,phone,type}),
         headers:{"Content-type":"application/json;charset=UTF-8"}

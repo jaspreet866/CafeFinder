@@ -13,7 +13,7 @@ const [phone,setphone]=useState()
 
 const reserve=async(e)=>{
     e.preventDefault()
-    const result=await fetch("http://localhost:9000/api/reservation",{
+    const result=await fetch("https://cafefinder-u2me.onrender.com/api/reservation",{
         method:"post",
         body:JSON.stringify({name,email,guest,date,phone}),
         headers:{"Content-type":"application/json;charset=UTF-8"}

@@ -31,7 +31,7 @@ export const PlaceView = () => {
     const prr = pr.get("id") || params.id;
 
     const show = useCallback(async () => {
-        const result = await fetch(`http://localhost:9000/api/showplace2/${prr}`);
+        const result = await fetch(`https://cafefinder-u2me.onrender.com/api/showplace2/${prr}`);
 
         const res = await result.json();
 
@@ -53,7 +53,7 @@ export const PlaceView = () => {
     }, [prr]);
 
     const show2 = useCallback(async () => {
-        const result = await fetch(`http://localhost:9000/api/getreview/${prr}`);
+        const result = await fetch(`https://cafefinder-u2me.onrender.com/api/getreview/${prr}`);
 
         const res = await result.json();
 
@@ -83,7 +83,7 @@ export const PlaceView = () => {
     const send = async (e) => {
         e.preventDefault();
 
-        const result = await fetch("http://localhost:9000/api/review", {
+        const result = await fetch("https://cafefinder-u2me.onrender.com/api/review", {
             method: "post",
             body: JSON.stringify({
                 user,
@@ -110,7 +110,7 @@ export const PlaceView = () => {
     };
 
     const handleFavorite=async()=>{
-        const result=await fetch("http://localhost:9000/api/wishlist",{
+        const result=await fetch("https://cafefinder-u2me.onrender.com/api/wishlist",{
             method:"post",
             body:JSON.stringify({id,prr,name,img,type,address,city}),
             headers:{"Content-type":"application/json;charset=UTF-8"}

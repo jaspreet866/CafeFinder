@@ -11,7 +11,7 @@ export const Register = () => {
     const register = async (e) => {
         e.preventDefault()
         const data = { name, pass, email }
-        const result = await fetch("http://localhost:9000/api/register", {
+        const result = await fetch("https://cafefinder-u2me.onrender.com/api/register", {
             method: "post",
             body: JSON.stringify(data),
             headers:{"Content-type":"application/json;charset=UTF-8"}

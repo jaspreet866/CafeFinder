@@ -16,7 +16,7 @@ export const Related = () => {
 
     useEffect(() => {
         const show = async () => {
-            const result = await fetch(`http://localhost:9000/api/related/${pr}`, {
+            const result = await fetch(`https://cafefinder-u2me.onrender.com/api/related/${pr}`, {
                 method: "get"
             })
             if (result) {

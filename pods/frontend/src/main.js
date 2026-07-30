@@ -61,7 +61,7 @@ export const Main = () => {
 
 
     const show = async () => {
-        const result = await fetch("http://localhost:9000/api/showplace", {
+        const result = await fetch("https://cafefinder-u2me.onrender.com/api/showplace", {
             method: "get"
         })
         if (result) {
@@ -76,7 +76,7 @@ export const Main = () => {
     }
 
     const show3 = async () => {
-        const result = await fetch("http://localhost:9000/api/gamingandcafe", {
+        const result = await fetch("https://cafefinder-u2me.onrender.com/api/gamingandcafe", {
             method: "get"
         })
         if (result) {
@@ -91,7 +91,7 @@ export const Main = () => {
     }
 
     const show4 = async () => {
-        const result = await fetch("http://localhost:9000/api/getcat", {
+        const result = await fetch("https://cafefinder-u2me.onrender.com/api/getcat", {
             method: "get"
         })
         if (result) {

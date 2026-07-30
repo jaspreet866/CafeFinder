@@ -110,7 +110,7 @@ export const Place = () => {
       for (let i = 0; i < img.length; i++) {
         formData.append("images", img[i]);
       }
-      const result = await fetch("http://localhost:9000/api/place",
+      const result = await fetch("https://cafefinder-u2me.onrender.com/api/place",
         {
           method: "post",
           body: formData
@@ -140,7 +140,7 @@ export const Place = () => {
       form.append("category", category);
       form.append("pic", img2);
       const result = await fetch(
-        "http://localhost:9000/api/category",
+        "https://cafefinder-u2me.onrender.com/api/category",
         {
           method: "POST",
           body: form
@@ -164,7 +164,7 @@ export const Place = () => {
     try {
 
       const result = await fetch(
-        "http://localhost:9000/api/getcat"
+        "https://cafefinder-u2me.onrender.com/api/getcat"
       );
 
       const res = await result.json();

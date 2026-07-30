@@ -42,7 +42,7 @@ export const Account = () => {
         }
 
         const showWishlist = async () => {
-            const result = await fetch(`http://localhost:9000/api/favourite/${userId}`)
+            const result = await fetch(`https://cafefinder-u2me.onrender.com/api/favourite/${userId}`)
             const res = await result.json()
 
             if (res.statuscode === 1) {
@@ -51,7 +51,7 @@ export const Account = () => {
         }
 
         const showReviews = async () => {
-            const result = await fetch(`http://localhost:9000/api/userreviews/${userId}`)
+            const result = await fetch(`https://cafefinder-u2me.onrender.com/api/userreviews/${userId}`)
             const res = await result.json()
 
             if (res.statuscode === 1) {

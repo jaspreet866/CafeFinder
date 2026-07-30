@@ -12,7 +12,7 @@ export const Login=()=>{
     
   const login=async(e)=>{
     e.preventDefault()
-    const result=await fetch("http://localhost:9000/api/login",{
+    const result=await fetch("https://cafefinder-u2me.onrender.com/api/login",{
         method:"post",
         body:JSON.stringify({email,pass}),
         headers:{"Content-type":"application/json;charset=UTF-8"}

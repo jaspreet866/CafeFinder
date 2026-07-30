@@ -21,7 +21,7 @@ export const Admin = () => {
     }, [])
 
     const show = async () => {
-        const result = await fetch("http://localhost:9000/api/getusers", {
+        const result = await fetch("https://cafefinder-u2me.onrender.com/api/getusers", {
             method: "get"
         })
         if (result) {
@@ -33,7 +33,7 @@ export const Admin = () => {
         }
     }
     const show2 = async () => {
-        const result = await fetch("http://localhost:9000/api/showplace", {
+        const result = await fetch("https://cafefinder-u2me.onrender.com/api/showplace", {
             method: "get"
         })
         if (result) {
@@ -45,7 +45,7 @@ export const Admin = () => {
         }
     }
     const show3 = async () => {
-        const result = await fetch("http://localhost:9000/api/reservations", {
+        const result = await fetch("https://cafefinder-u2me.onrender.com/api/reservations", {
             method: "get",
         })
         if (result) {
@@ -56,7 +56,7 @@ export const Admin = () => {
         }
     }
     const show4 = async () => {
-        const result = await fetch("http://localhost:9000/api/allreviews", {
+        const result = await fetch("https://cafefinder-u2me.onrender.com/api/allreviews", {
             method: "get"
         })
         if (result) {
@@ -69,7 +69,7 @@ export const Admin = () => {
         }
     }
     const show5 = async () => {
-        const result = await fetch("http://localhost:9000/api/getcat", {
+        const result = await fetch("https://cafefinder-u2me.onrender.com/api/getcat", {
             method: "get",
         })
         if (result) {
@@ -83,7 +83,7 @@ export const Admin = () => {
         }
     }
     const removeuser=async(id)=>{
-        const result=await fetch(`http://localhost:9000/api/removeuser/${id}`,{
+        const result=await fetch(`https://cafefinder-u2me.onrender.com/api/removeuser/${id}`,{
             method:"delete"
         })
         if(result.ok){
@@ -99,7 +99,7 @@ export const Admin = () => {
     }
 
     const removeplace=async(id)=>{
-        const result=await fetch(`http://localhost:9000/api/removeplace/${id}`,{
+        const result=await fetch(`https://cafefinder-u2me.onrender.com/api/removeplace/${id}`,{
             method:"delete"
         })
         if(result.ok){
