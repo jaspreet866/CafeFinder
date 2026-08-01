@@ -11,6 +11,7 @@ export const Admin = () => {
     const [review, setreview] = useState("")
     const [allusers, setallusers] = useState([])
     const [reviews, setreviews] = useState([])
+    const [allreservations, setallreservations] = useState([])
 
     useEffect(() => {
         show()
@@ -52,6 +53,33 @@ export const Admin = () => {
             const res = await result.json()
             if (res.statuscode === 1) {
                 setreserve(res.data.length)
+                setallreservations(res.data)
+            }
+        }
+    }
+
+    const updateReservationStatus = async (id, status) => {
+        const result = await fetch("https://cafefinder-u2me.onrender.com/api/updatereservationstatus", {
+            method: "post",
+            body: JSON.stringify({ id, status }),
+            headers: { "Content-type": "application/json;charset=UTF-8" }
+        })
+        if (result.ok) {
+            const res = await result.json()
+            if (res.statuscode === 1) {
+                show3()
+            }
+        }
+    }
+
+    const cancelReservationAdmin = async (id) => {
+        const result = await fetch(`https://cafefinder-u2me.onrender.com/api/cancelreservation/${id}`, {
+            method: "delete"
+        })
+        if (result.ok) {
+            const res = await result.json()
+            if (res.statuscode === 1) {
+                show3()
             }
         }
     }
@@ -131,6 +159,7 @@ export const Admin = () => {
                             <a href="#categories"><span>03</span> Categories</a>
                             <a href="#users"><span>04</span> Users</a>
                             <a href="#reviews"><span>05</span> Reviews</a>
+                            <a href="#reservations"><span>06</span> Reservations</a>
                         </nav>
                     </aside>
 
@@ -287,6 +316,66 @@ export const Admin = () => {
                                                 </div>
                                             </div>)
                                     }
+                                </div>
+                            </AdminSection>
+                        </section>
+
+                        <section className="admin-section" id="reservations">
+                            <AdminSection title="Manage Table Reservations">
+                                <div className="table-responsive admin-table-wrap">
+                                    <table className="table table-hover align-middle admin-bootstrap-table mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">Place</th>
+                                                <th scope="col">Customer</th>
+                                                <th scope="col">Date & Time</th>
+                                                <th scope="col">Guests</th>
+                                                <th scope="col">Status</th>
+                                                <th scope="col" className="text-end">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {allreservations.map((a) => (
+                                                <tr key={a._id}>
+                                                    <td className="fw-semibold">{a.Placename || "General Table"}</td>
+                                                    <td>
+                                                        <div>
+                                                            <strong>{a.Name}</strong>
+                                                            <div className="small text-muted">{a.Email} | {a.Phone}</div>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div>{a.Date}</div>
+                                                        <small className="text-muted">{a.TimeSlot || "12:00 PM - 02:00 PM"}</small>
+                                                    </td>
+                                                    <td>{a.Guests} Guests</td>
+                                                    <td>
+                                                        <span className={`badge rounded-pill ${a.Status === "Confirmed" ? "text-bg-success" : "text-bg-warning"}`}>
+                                                            {a.Status || "Pending"}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <div className="d-flex justify-content-end gap-2 flex-wrap">
+                                                            {a.Status !== "Confirmed" && (
+                                                                <button
+                                                                    className="btn btn-outline-success btn-sm"
+                                                                    onClick={() => updateReservationStatus(a._id, "Confirmed")}
+                                                                >
+                                                                    Confirm
+                                                                </button>
+                                                            )}
+                                                            <button
+                                                                className="btn btn-outline-danger btn-sm"
+                                                                onClick={() => cancelReservationAdmin(a._id)}
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </AdminSection>
                         </section>

@@ -1,12 +1,14 @@
 import { Link, useNavigate } from "react-router-dom"
 import { useEffect, useState } from "react"
-import { FaHeart, FaRegCommentDots, FaUserCircle } from "react-icons/fa"
+import { FaHeart, FaRegCommentDots, FaUserCircle, FaCalendarCheck } from "react-icons/fa"
 import { Rating } from "react-simple-star-rating"
+import { showError, showSuccess } from "./alerts"
 
 export const Account = () => {
     const navigate = useNavigate()
     const [wishlist, setWishlist] = useState([])
     const [reviews, setReviews] = useState([])
+    const [reservations, setReservations] = useState([])
 
     const getUser = () => {
         try {
@@ -33,6 +35,15 @@ export const Account = () => {
     const user = getUser()
     const userEmail = user?.mail || "Guest user"
     const avatarLetter = userEmail.charAt(0).toUpperCase()
+
+    const fetchUserReservations = async (userId) => {
+        const result = await fetch(`https://cafefinder-u2me.onrender.com/api/userreservations/${userId}`)
+        const res = await result.json()
+
+        if (res.statuscode === 1) {
+            setReservations(res.data)
+        }
+    }
 
     useEffect(() => {
         const userId = user?.id
@@ -61,7 +72,26 @@ export const Account = () => {
 
         showWishlist()
         showReviews()
+        fetchUserReservations(userId)
     }, [user?.id])
+
+    const handleCancelReservation = async (resId) => {
+        const result = await fetch(`https://cafefinder-u2me.onrender.com/api/cancelreservation/${resId}`, {
+            method: "delete"
+        })
+
+        if (result.ok) {
+            const res = await result.json()
+            if (res.statuscode === 1) {
+                showSuccess("Reservation Cancelled", "Your table reservation has been cancelled.")
+                if (user?.id) {
+                    fetchUserReservations(user.id)
+                }
+            } else {
+                showError("Error", "Could not cancel reservation. Please try again.")
+            }
+        }
+    }
 
 
     const quickActions = [
@@ -114,7 +144,16 @@ export const Account = () => {
                     </div>
 
                     <div className="row g-4 mt-1">
-                        <div className="col-md-6">
+                        <div className="col-md-4">
+                            <div className="account-stat">
+                                <span><FaCalendarCheck /></span>
+                                <div>
+                                    <h2>{reservations.length}</h2>
+                                    <p>Active Reservations</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="col-md-4">
                             <div className="account-stat">
                                 <span><FaHeart /></span>
                                 <div>
@@ -123,7 +162,7 @@ export const Account = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="col-md-6">
+                        <div className="col-md-4">
                             <div className="account-stat">
                                 <span><FaRegCommentDots /></span>
                                 <div>
@@ -168,6 +207,66 @@ export const Account = () => {
                                     <span>Status</span>
                                     <strong>{user ? "Logged in" : "Not logged in"}</strong>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* RESERVATIONS SECTION */}
+                    <div className="row g-4 mt-1">
+                        <div className="col-12">
+                            <div className="account-panel">
+                                <div className="account-section-head">
+                                    <div>
+                                        <p className="section-kicker">Bookings</p>
+                                        <h2>My Table Reservations</h2>
+                                    </div>
+                                    <Link to="/reserve" className="btn btn-primary btn-sm">+ New Reservation</Link>
+                                </div>
+
+                                {reservations.length > 0 ? (
+                                    <div className="table-responsive mt-3">
+                                        <table className="table table-hover align-middle">
+                                            <thead>
+                                                <tr>
+                                                    <th>Place</th>
+                                                    <th>Date</th>
+                                                    <th>Time Slot</th>
+                                                    <th>Guests</th>
+                                                    <th>Status</th>
+                                                    <th className="text-end">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {reservations.map((res) => (
+                                                    <tr key={res._id}>
+                                                        <td><strong>{res.Placename || "General Table"}</strong></td>
+                                                        <td>{res.Date}</td>
+                                                        <td>{res.TimeSlot || "12:00 PM - 02:00 PM"}</td>
+                                                        <td>{res.Guests} Guests</td>
+                                                        <td>
+                                                            <span className={`badge ${res.Status === "Confirmed" ? "text-bg-success" : "text-bg-warning"}`}>
+                                                                {res.Status || "Pending"}
+                                                            </span>
+                                                        </td>
+                                                        <td className="text-end">
+                                                            <button
+                                                                className="btn btn-outline-danger btn-sm"
+                                                                onClick={() => handleCancelReservation(res._id)}
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ) : (
+                                    <div className="account-empty">
+                                        <p>No table reservations yet.</p>
+                                        <Link to="/reserve" className="btn btn-primary btn-sm">Reserve a Table</Link>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

@@ -181,7 +181,7 @@ export const PlaceView = () => {
                             {(() => {
                                 if (type === "6a0494a3da7b49bca4d98cf0") {
                                     return (
-                                        <Link to="/reserve">
+                                        <Link to={`/reserve?placeId=${prr}&name=${encodeURIComponent(name)}`}>
                                             <button className="btn btn-primary px-4">Book A Table</button>
                                         </Link>
                                     );

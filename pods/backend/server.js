@@ -421,18 +421,28 @@ const Table = mongoose.Schema({
     Email: String,
     Guests: Number,
     Date: String,
-    Phone: Number
+    Phone: Number,
+    UserID: String,
+    PlaceID: String,
+    Placename: String,
+    TimeSlot: String,
+    Status: { type: String, default: "Pending" }
 })
 
 const booktable = new mongoose.model("Reservations", Table)
 
 app.post("/api/reservation", async (req, res) => {
-    const result = await new booktable({
+    const result = new booktable({
         Name: req.body.name,
         Email: req.body.email,
         Guests: req.body.guest,
         Date: req.body.date,
-        Phone: req.body.phone
+        Phone: req.body.phone,
+        UserID: req.body.userId || req.body.id || "",
+        PlaceID: req.body.placeId || "",
+        Placename: req.body.placename || req.body.placeName || "General Table",
+        TimeSlot: req.body.timeSlot || "12:00 PM - 02:00 PM",
+        Status: "Pending"
     })
     if (result) {
         const response = await result.save()
@@ -446,7 +456,7 @@ app.post("/api/reservation", async (req, res) => {
 })
 
 app.get("/api/reservations", async (req, res) => {
-    const result = await booktable.find()
+    const result = await booktable.find().sort({ _id: -1 })
     if (result) {
         res.send({ statuscode: 1, data: result })
     }
@@ -454,6 +464,44 @@ app.get("/api/reservations", async (req, res) => {
         res.send({ statuscode: 0 })
     }
 })
+
+app.get("/api/userreservations/:id", async (req, res) => {
+    const userId = req.params?.id
+
+    if (!userId || userId === "undefined") {
+        return res.send({ statuscode: 1, data: [] })
+    }
+
+    const result = await booktable.find({ UserID: userId }).sort({ _id: -1 })
+    if (result) {
+        res.send({ statuscode: 1, data: result })
+    }
+    else {
+        res.send({ statuscode: 0 })
+    }
+})
+
+app.delete("/api/cancelreservation/:id", async (req, res) => {
+    const result = await booktable.deleteOne({ _id: req.params.id })
+    if (result.deletedCount > 0) {
+        res.send({ statuscode: 1 })
+    }
+    else {
+        res.send({ statuscode: 0 })
+    }
+})
+
+app.post("/api/updatereservationstatus", async (req, res) => {
+    const { id, status } = req.body
+    const result = await booktable.updateOne({ _id: id }, { $set: { Status: status } })
+    if (result.modifiedCount > 0) {
+        res.send({ statuscode: 1 })
+    }
+    else {
+        res.send({ statuscode: 0 })
+    }
+})
+
 
 
 //hotel booking
