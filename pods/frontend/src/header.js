@@ -6,7 +6,7 @@ import Swal from "sweetalert2";
 
 export const Header = () => {
     const [darkMode, setDarkMode] = useState(() => localStorage.getItem("theme") === "dark");
-    const { id,setid } = useContext(Context);
+    const { id, setid } = useContext(Context);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -110,6 +110,7 @@ export const Header = () => {
                                 </button>
                                 <ul className="dropdown-menu shadow-sm dropdown-menu-end">
                                     <li><Link className="dropdown-item" to="/account">My Account</Link></li>
+                                    <li><Link className="dropdown-item" to="/admin">Admin Panel</Link></li>
                                     <li><Link className="dropdown-item" to="/login">Login</Link></li>
                                     <li><Link className="dropdown-item" to="/register">Register</Link></li>
                                     <li><Link className="dropdown-item" to="/place">Add Place</Link></li>
@@ -161,6 +162,7 @@ export const Header = () => {
                         <Link to="/cowork" className="mobile-nav-link" onClick={closeMobileOffcanvas}>Coworking Spaces</Link>
                         <Link to="/reserve" className="mobile-nav-link" onClick={closeMobileOffcanvas}>Reservations</Link>
                         <Link to="/account" className="mobile-nav-link" onClick={closeMobileOffcanvas}>My Account</Link>
+                        <Link to="/admin" className="mobile-nav-link" onClick={closeMobileOffcanvas}>Admin Panel</Link>
                         <Link to="/login" className="mobile-nav-link" onClick={closeMobileOffcanvas}>Login</Link>
                         <Link to="/register" className="mobile-nav-link" onClick={closeMobileOffcanvas}>Register</Link>
                         <Link to="/place" className="mobile-nav-link" onClick={closeMobileOffcanvas}>Add Place</Link>
