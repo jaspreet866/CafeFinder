@@ -16,8 +16,12 @@ import {
     FaTag, 
     FaChartLine,
     FaArrowUp,
-    FaSyncAlt
+    FaSyncAlt,
+    FaChevronLeft,
+    FaChevronRight
 } from "react-icons/fa";
+
+const ITEMS_PER_PAGE = 5;
 
 export const Admin = () => {
     const [users, setusers] = useState(0);
@@ -35,10 +39,21 @@ export const Admin = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [activeSection, setActiveSection] = useState("dashboard");
 
+    // Pagination State
+    const [placesPage, setPlacesPage] = useState(1);
+    const [usersPage, setUsersPage] = useState(1);
+    const [reservationsPage, setReservationsPage] = useState(1);
+
     useEffect(() => {
         fetchAllData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    useEffect(() => {
+        setPlacesPage(1);
+        setUsersPage(1);
+        setReservationsPage(1);
+    }, [searchQuery]);
 
     const fetchAllData = async () => {
         setLoading(true);
@@ -265,6 +280,11 @@ export const Admin = () => {
         (rev.Email && rev.Email.toLowerCase().includes(q))
     );
 
+    // Paginated Arrays
+    const paginatedPlaces = filteredPlaces.slice((placesPage - 1) * ITEMS_PER_PAGE, placesPage * ITEMS_PER_PAGE);
+    const paginatedUsers = filteredUsers.slice((usersPage - 1) * ITEMS_PER_PAGE, usersPage * ITEMS_PER_PAGE);
+    const paginatedReservations = filteredReservations.slice((reservationsPage - 1) * ITEMS_PER_PAGE, reservationsPage * ITEMS_PER_PAGE);
+
     return (
         <main className="admin-page">
             <div className="container">
@@ -453,8 +473,8 @@ export const Admin = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {filteredPlaces.length > 0 ? (
-                                                filteredPlaces.map((a) => (
+                                            {paginatedPlaces.length > 0 ? (
+                                                paginatedPlaces.map((a) => (
                                                     <tr key={a._id || a.Placename}>
                                                         <td className="fw-bold text-dark">
                                                             <div className="d-flex align-items-center gap-2">
@@ -483,6 +503,12 @@ export const Admin = () => {
                                         </tbody>
                                     </table>
                                 </div>
+                                <PaginationControls 
+                                    currentPage={placesPage} 
+                                    totalItems={filteredPlaces.length} 
+                                    itemsPerPage={ITEMS_PER_PAGE} 
+                                    onPageChange={setPlacesPage} 
+                                />
                             </div>
                         </section>
 
@@ -526,8 +552,8 @@ export const Admin = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {filteredUsers.length > 0 ? (
-                                                filteredUsers.map((a) => (
+                                            {paginatedUsers.length > 0 ? (
+                                                paginatedUsers.map((a) => (
                                                     <tr key={a._id}>
                                                         <td>
                                                             <div className="admin-user-identity">
@@ -562,6 +588,12 @@ export const Admin = () => {
                                         </tbody>
                                     </table>
                                 </div>
+                                <PaginationControls 
+                                    currentPage={usersPage} 
+                                    totalItems={filteredUsers.length} 
+                                    itemsPerPage={ITEMS_PER_PAGE} 
+                                    onPageChange={setUsersPage} 
+                                />
                             </div>
                         </section>
 
@@ -620,8 +652,8 @@ export const Admin = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {filteredReservations.length > 0 ? (
-                                                filteredReservations.map((a) => (
+                                            {paginatedReservations.length > 0 ? (
+                                                paginatedReservations.map((a) => (
                                                     <tr key={a._id}>
                                                         <td className="fw-bold text-dark">{a.Placename || "General Table"}</td>
                                                         <td>
@@ -670,6 +702,12 @@ export const Admin = () => {
                                         </tbody>
                                     </table>
                                 </div>
+                                <PaginationControls 
+                                    currentPage={reservationsPage} 
+                                    totalItems={filteredReservations.length} 
+                                    itemsPerPage={ITEMS_PER_PAGE} 
+                                    onPageChange={setReservationsPage} 
+                                />
                             </div>
                         </section>
                     </section>
@@ -701,3 +739,51 @@ const EmptyTableRow = ({ colSpan, text }) => (
         </td>
     </tr>
 );
+
+const PaginationControls = ({ currentPage, totalItems, itemsPerPage, onPageChange }) => {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    if (totalPages <= 1) return null;
+
+    const startItem = (currentPage - 1) * itemsPerPage + 1;
+    const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+    const pages = [];
+    for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+    }
+
+    return (
+        <div className="admin-pagination-wrapper">
+            <span className="pagination-info">
+                Showing <strong>{startItem}</strong> - <strong>{endItem}</strong> of <strong>{totalItems}</strong> entries
+            </span>
+            <div className="pagination-buttons">
+                <button 
+                    className="btn-pagination-nav" 
+                    disabled={currentPage === 1}
+                    onClick={() => onPageChange(currentPage - 1)}
+                    title="Previous Page"
+                >
+                    <FaChevronLeft />
+                </button>
+                {pages.map(num => (
+                    <button 
+                        key={num}
+                        className={`btn-pagination-page ${currentPage === num ? "active" : ""}`}
+                        onClick={() => onPageChange(num)}
+                    >
+                        {num}
+                    </button>
+                ))}
+                <button 
+                    className="btn-pagination-nav" 
+                    disabled={currentPage === totalPages}
+                    onClick={() => onPageChange(currentPage + 1)}
+                    title="Next Page"
+                >
+                    <FaChevronRight />
+                </button>
+            </div>
+        </div>
+    );
+};
