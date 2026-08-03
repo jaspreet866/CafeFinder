@@ -36,8 +36,8 @@ export const Admin = () => {
     const [activeSection, setActiveSection] = useState("dashboard");
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/exhaustive-deps
         fetchAllData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchAllData = async () => {
