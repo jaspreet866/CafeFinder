@@ -1,383 +1,676 @@
 import { useEffect, useState } from "react";
 import { showError } from "./alerts";
+import Swal from "sweetalert2";
+import { 
+    FaUsers, 
+    FaStore, 
+    FaCalendarCheck, 
+    FaStar, 
+    FaTrash, 
+    FaCheck, 
+    FaSearch, 
+    FaTimes,
+    FaFilter, 
+    FaUserShield, 
+    FaQuoteLeft, 
+    FaTag, 
+    FaChartLine,
+    FaArrowUp,
+    FaSyncAlt
+} from "react-icons/fa";
 
 export const Admin = () => {
+    const [users, setusers] = useState(0);
+    const [place, setplace] = useState(0);
+    const [reserve, setreserve] = useState(0);
+    const [review, setreview] = useState(0);
+    
+    const [alllplaces, setallplaces] = useState([]);
+    const [allcat, setallcats] = useState([]);
+    const [allusers, setallusers] = useState([]);
+    const [reviews, setreviews] = useState([]);
+    const [allreservations, setallreservations] = useState([]);
 
-    const [users, setusers] = useState("")
-    const [place, setplace] = useState("")
-    const [reserve, setreserve] = useState("")
-    const [alllplaces, setallplaces] = useState([])
-    const [allcat, setallcats] = useState([])
-    const [review, setreview] = useState("")
-    const [allusers, setallusers] = useState([])
-    const [reviews, setreviews] = useState([])
-    const [allreservations, setallreservations] = useState([])
+    const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [activeSection, setActiveSection] = useState("dashboard");
 
     useEffect(() => {
-        show()
-        show2()
-        show3()
-        show4()
-        show5()
-    }, [])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        fetchAllData();
+    }, []);
+
+    const fetchAllData = async () => {
+        setLoading(true);
+        await Promise.all([show(), show2(), show3(), show4(), show5()]);
+        setLoading(false);
+    };
 
     const show = async () => {
-        const result = await fetch("https://cafefinder-u2me.onrender.com/api/getusers", {
-            method: "get"
-        })
-        if (result) {
-            const res = await result.json()
-            if (res.statuscode === 1) {
-                setusers(res.data.length)
-                setallusers(res.data)
+        try {
+            const result = await fetch("https://cafefinder-u2me.onrender.com/api/getusers");
+            if (result.ok) {
+                const res = await result.json();
+                if (res.statuscode === 1) {
+                    setusers(res.data.length);
+                    setallusers(res.data);
+                }
             }
+        } catch (err) {
+            console.error("Error fetching users:", err);
         }
-    }
+    };
+
     const show2 = async () => {
-        const result = await fetch("https://cafefinder-u2me.onrender.com/api/showplace", {
-            method: "get"
-        })
-        if (result) {
-            const res = await result.json()
-            if (res.statuscode === 1) {
-                setplace(res.data.length)
-                setallplaces(res.data)
+        try {
+            const result = await fetch("https://cafefinder-u2me.onrender.com/api/showplace");
+            if (result.ok) {
+                const res = await result.json();
+                if (res.statuscode === 1) {
+                    setplace(res.data.length);
+                    setallplaces(res.data);
+                }
             }
+        } catch (err) {
+            console.error("Error fetching places:", err);
         }
-    }
+    };
+
     const show3 = async () => {
-        const result = await fetch("https://cafefinder-u2me.onrender.com/api/reservations", {
-            method: "get",
-        })
-        if (result) {
-            const res = await result.json()
-            if (res.statuscode === 1) {
-                setreserve(res.data.length)
-                setallreservations(res.data)
+        try {
+            const result = await fetch("https://cafefinder-u2me.onrender.com/api/reservations");
+            if (result.ok) {
+                const res = await result.json();
+                if (res.statuscode === 1) {
+                    setreserve(res.data.length);
+                    setallreservations(res.data);
+                }
             }
+        } catch (err) {
+            console.error("Error fetching reservations:", err);
         }
-    }
+    };
+
+    const show4 = async () => {
+        try {
+            const result = await fetch("https://cafefinder-u2me.onrender.com/api/allreviews");
+            if (result.ok) {
+                const res = await result.json();
+                if (res.statuscode === 1) {
+                    setreview(res.data.length);
+                    setreviews(res.data);
+                }
+            }
+        } catch (err) {
+            console.error("Error fetching reviews:", err);
+        }
+    };
+
+    const show5 = async () => {
+        try {
+            const result = await fetch("https://cafefinder-u2me.onrender.com/api/getcat");
+            if (result.ok) {
+                const res = await result.json();
+                if (res.statuscode === 1) {
+                    setallcats(res.data);
+                } else {
+                    showError("Categories Not Loaded", "Please refresh the admin panel and try again.");
+                }
+            }
+        } catch (err) {
+            console.error("Error fetching categories:", err);
+        }
+    };
 
     const updateReservationStatus = async (id, status) => {
-        const result = await fetch("https://cafefinder-u2me.onrender.com/api/updatereservationstatus", {
-            method: "post",
-            body: JSON.stringify({ id, status }),
-            headers: { "Content-type": "application/json;charset=UTF-8" }
-        })
-        if (result.ok) {
-            const res = await result.json()
-            if (res.statuscode === 1) {
-                show3()
+        try {
+            const result = await fetch("https://cafefinder-u2me.onrender.com/api/updatereservationstatus", {
+                method: "post",
+                body: JSON.stringify({ id, status }),
+                headers: { "Content-type": "application/json;charset=UTF-8" }
+            });
+            if (result.ok) {
+                const res = await result.json();
+                if (res.statuscode === 1) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Reservation Updated',
+                        text: `Reservation status changed to ${status}`,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    show3();
+                }
             }
+        } catch (err) {
+            showError("Update Failed", "Unable to update reservation status.");
         }
-    }
+    };
 
     const cancelReservationAdmin = async (id) => {
-        const result = await fetch(`https://cafefinder-u2me.onrender.com/api/cancelreservation/${id}`, {
-            method: "delete"
-        })
-        if (result.ok) {
-            const res = await result.json()
-            if (res.statuscode === 1) {
-                show3()
-            }
-        }
-    }
-    const show4 = async () => {
-        const result = await fetch("https://cafefinder-u2me.onrender.com/api/allreviews", {
-            method: "get"
-        })
-        if (result) {
-            const res = await result.json()
-            if (res.statuscode === 1) {
-                setreview(res.data.length)
-                setreviews(res.data)
+        const confirm = await Swal.fire({
+            title: 'Cancel Reservation?',
+            text: "This action will permanently delete this table booking.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e63946',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, cancel it!'
+        });
 
+        if (confirm.isConfirmed) {
+            try {
+                const result = await fetch(`https://cafefinder-u2me.onrender.com/api/cancelreservation/${id}`, {
+                    method: "delete"
+                });
+                if (result.ok) {
+                    const res = await result.json();
+                    if (res.statuscode === 1) {
+                        Swal.fire('Cancelled!', 'The reservation has been removed.', 'success');
+                        show3();
+                    }
+                }
+            } catch (err) {
+                showError("Action Failed", "Could not cancel reservation.");
             }
         }
-    }
-    const show5 = async () => {
-        const result = await fetch("https://cafefinder-u2me.onrender.com/api/getcat", {
-            method: "get",
-        })
-        if (result) {
-            const res = await result.json()
-            if (res.statuscode === 1) {
-                setallcats(res.data)
-            }
-            else {
-                showError("Categories Not Loaded", "Please refresh the admin panel and try again.")
-            }
-        }
-    }
-    const removeuser=async(id)=>{
-        const result=await fetch(`https://cafefinder-u2me.onrender.com/api/removeuser/${id}`,{
-            method:"delete"
-        })
-        if(result.ok){
-            const res=await result.json()
-            if(res.statuscode===1){
-                alert("deleted")
-                show()
-            }
-            else{
-                alert("not")
-            }
-        }
-    }
+    };
 
-    const removeplace=async(id)=>{
-        const result=await fetch(`https://cafefinder-u2me.onrender.com/api/removeplace/${id}`,{
-            method:"delete"
-        })
-        if(result.ok){
-            const res=await result.json()
-            if(res.statuscode===1){
-                alert("deleted")
-                show2()
-            }
-            else{
-                alert("not now")
+    const removeuser = async (id) => {
+        const confirm = await Swal.fire({
+            title: 'Delete User?',
+            text: "Are you sure you want to remove this user account?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e63946',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, delete'
+        });
+
+        if (confirm.isConfirmed) {
+            try {
+                const result = await fetch(`https://cafefinder-u2me.onrender.com/api/removeuser/${id}`, {
+                    method: "delete"
+                });
+                if (result.ok) {
+                    const res = await result.json();
+                    if (res.statuscode === 1) {
+                        Swal.fire('Deleted!', 'User has been removed successfully.', 'success');
+                        show();
+                    } else {
+                        Swal.fire('Failed', 'Could not remove user.', 'error');
+                    }
+                }
+            } catch (err) {
+                showError("Error", "Server error while deleting user.");
             }
         }
-    }
+    };
 
+    const removeplace = async (id) => {
+        const confirm = await Swal.fire({
+            title: 'Remove Place?',
+            text: "This workspace or cafe will be deleted from directory listings.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e63946',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, delete place'
+        });
+
+        if (confirm.isConfirmed) {
+            try {
+                const result = await fetch(`https://cafefinder-u2me.onrender.com/api/removeplace/${id}`, {
+                    method: "delete"
+                });
+                if (result.ok) {
+                    const res = await result.json();
+                    if (res.statuscode === 1) {
+                        Swal.fire('Removed!', 'Place deleted from database.', 'success');
+                        show2();
+                    } else {
+                        Swal.fire('Error', 'Unable to delete place.', 'error');
+                    }
+                }
+            } catch (err) {
+                showError("Error", "Server error while removing place.");
+            }
+        }
+    };
+
+    // Filter Helpers
+    const q = searchQuery.toLowerCase().trim();
+
+    const filteredPlaces = alllplaces.filter(p => 
+        !q || (p.Placename && p.Placename.toLowerCase().includes(q)) || 
+        (p.Address && p.Address.toLowerCase().includes(q)) ||
+        (p.City && p.City.toLowerCase().includes(q))
+    );
+
+    const filteredUsers = allusers.filter(u => 
+        !q || (u.Name && u.Name.toLowerCase().includes(q)) || 
+        (u.Email && u.Email.toLowerCase().includes(q)) ||
+        (u.UserType && u.UserType.toLowerCase().includes(q))
+    );
+
+    const filteredReservations = allreservations.filter(r => 
+        !q || (r.Name && r.Name.toLowerCase().includes(q)) || 
+        (r.Email && r.Email.toLowerCase().includes(q)) ||
+        (r.Placename && r.Placename.toLowerCase().includes(q))
+    );
+
+    const filteredReviews = reviews.filter(rev => 
+        !q || (rev.Name && rev.Name.toLowerCase().includes(q)) ||
+        (rev.Msg && rev.Msg.toLowerCase().includes(q)) ||
+        (rev.Email && rev.Email.toLowerCase().includes(q))
+    );
 
     return (
         <main className="admin-page">
             <div className="container">
                 <div className="admin-layout">
+                    {/* Modern Sidebar Navigation */}
                     <aside className="admin-sidebar">
-                        <div className="admin-brand-mark">W</div>
-                        <p className="section-kicker">Admin Panel</p>
-                        <h2>WorkWave Admin</h2>
-                        <p className="admin-sidebar-copy">Monitor activity and keep the workspace directory clean.</p>
+                        <div className="admin-brand">
+                            <div className="admin-brand-icon">
+                                <FaUserShield />
+                            </div>
+                            <div>
+                                <h2 className="admin-brand-title">Control Hub</h2>
+                                <span className="admin-brand-badge">WorkWave Admin</span>
+                            </div>
+                        </div>
 
-                        <nav className="admin-menu">
-                            <a href="#dashboard"><span>01</span> Dashboard</a>
-                            <a href="#places"><span>02</span> Places</a>
-                            <a href="#categories"><span>03</span> Categories</a>
-                            <a href="#users"><span>04</span> Users</a>
-                            <a href="#reviews"><span>05</span> Reviews</a>
-                            <a href="#reservations"><span>06</span> Reservations</a>
+                        <p className="admin-sidebar-desc">Manage users, workspace directory, reservations, and community feedback.</p>
+
+                        <nav className="admin-nav-menu">
+                            <button 
+                                className={`admin-nav-item ${activeSection === "dashboard" ? "active" : ""}`}
+                                onClick={() => setActiveSection("dashboard")}
+                            >
+                                <FaChartLine className="nav-icon" />
+                                <span>Overview Dashboard</span>
+                            </button>
+                            <a 
+                                href="#places" 
+                                className={`admin-nav-item ${activeSection === "places" ? "active" : ""}`}
+                                onClick={() => setActiveSection("places")}
+                            >
+                                <FaStore className="nav-icon" />
+                                <span>Places</span>
+                                <span className="admin-nav-count">{place}</span>
+                            </a>
+                            <a 
+                                href="#categories" 
+                                className={`admin-nav-item ${activeSection === "categories" ? "active" : ""}`}
+                                onClick={() => setActiveSection("categories")}
+                            >
+                                <FaTag className="nav-icon" />
+                                <span>Categories</span>
+                                <span className="admin-nav-count">{allcat.length}</span>
+                            </a>
+                            <a 
+                                href="#users" 
+                                className={`admin-nav-item ${activeSection === "users" ? "active" : ""}`}
+                                onClick={() => setActiveSection("users")}
+                            >
+                                <FaUsers className="nav-icon" />
+                                <span>Users</span>
+                                <span className="admin-nav-count">{users}</span>
+                            </a>
+                            <a 
+                                href="#reviews" 
+                                className={`admin-nav-item ${activeSection === "reviews" ? "active" : ""}`}
+                                onClick={() => setActiveSection("reviews")}
+                            >
+                                <FaStar className="nav-icon" />
+                                <span>Reviews</span>
+                                <span className="admin-nav-count">{review}</span>
+                            </a>
+                            <a 
+                                href="#reservations" 
+                                className={`admin-nav-item ${activeSection === "reservations" ? "active" : ""}`}
+                                onClick={() => setActiveSection("reservations")}
+                            >
+                                <FaCalendarCheck className="nav-icon" />
+                                <span>Reservations</span>
+                                <span className="admin-nav-count">{reserve}</span>
+                            </a>
                         </nav>
+
+                        <div className="admin-sidebar-footer">
+                            <button className="btn-refresh-data" onClick={fetchAllData} title="Refresh All Data">
+                                <FaSyncAlt className={loading ? "spin-icon" : ""} /> Refresh System Data
+                            </button>
+                        </div>
                     </aside>
 
+                    {/* Main Content Area */}
                     <section className="admin-content">
-                        <section className="admin-hero" id="dashboard">
-                            <div>
-                                <p className="section-kicker">Dashboard</p>
-                                <h1>Admin Dashboard</h1>
-                                <p>Overview of users, places, reservations, reviews, and website activity.</p>
+                        {/* Top Hero & Live Search Controls */}
+                        <div className="admin-top-bar" id="dashboard">
+                            <div className="admin-hero-text">
+                                <span className="admin-pill-status"><span className="pulse-dot"></span> System Live</span>
+                                <h1>Admin Command Center</h1>
+                                <p>Comprehensive platform management & metrics oversight</p>
                             </div>
-                            <div className="admin-hero-panel">
-                                <span>Live</span>
-                                <strong>{users || 0}</strong>
-                                <small>registered users</small>
-                            </div>
-                        </section>
-
-                        <div className="admin-stats">
-                            <div className="admin-stat-card admin-stat-users card">
-                                <div className="card-body">
-                                    <span className="admin-stat-icon">U</span>
-                                    <h3>Total Users</h3>
-                                    <h1>{users}</h1>
-                                </div>
-                            </div>
-                            <div className="admin-stat-card admin-stat-places card">
-                                <div className="card-body">
-                                    <span className="admin-stat-icon">P</span>
-                                    <h3>Total Places</h3>
-                                    <p>{place}</p>
-                                </div>
-                            </div>
-                            <div className="admin-stat-card admin-stat-reserve card">
-                                <div className="card-body">
-                                    <span className="admin-stat-icon">R</span>
-                                    <h3>Reservations</h3>
-                                    <p>{reserve}</p>
-                                </div>
-                            </div>
-                            <div className="admin-stat-card admin-stat-reviews card">
-                                <div className="card-body">
-                                    <span className="admin-stat-icon">F</span>
-                                    <h3>Total Reviews</h3>
-                                    <p>{review}</p>
+                            
+                            <div className="admin-search-wrapper">
+                                <div className="admin-search-input-group">
+                                    <FaSearch className="search-icon" />
+                                    <input 
+                                        type="text" 
+                                        className="form-control admin-search-field"
+                                        placeholder="Search places, users, bookings..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                    {searchQuery && (
+                                        <button className="clear-search-btn" onClick={() => setSearchQuery("")}>
+                                            <FaTimes />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>
 
-                        <section className="admin-section" id="places">
-                            <AdminSection title="Manage Places">
-                                <div className="table-responsive admin-table-wrap">
-                                    <table className="table table-hover align-middle admin-bootstrap-table mb-0">
+                        {/* Metric Stat Cards */}
+                        <div className="admin-stats-grid">
+                            <div className="admin-stat-card stat-users">
+                                <div className="stat-card-inner">
+                                    <div className="stat-icon-box icon-users">
+                                        <FaUsers />
+                                    </div>
+                                    <div className="stat-details">
+                                        <span className="stat-label">Total Users</span>
+                                        <h2 className="stat-number">{users}</h2>
+                                        <div className="stat-trend positive">
+                                            <FaArrowUp /> <span>Active directory</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="admin-stat-card stat-places">
+                                <div className="stat-card-inner">
+                                    <div className="stat-icon-box icon-places">
+                                        <FaStore />
+                                    </div>
+                                    <div className="stat-details">
+                                        <span className="stat-label">Listed Places</span>
+                                        <h2 className="stat-number">{place}</h2>
+                                        <div className="stat-trend positive">
+                                            <FaArrowUp /> <span>Verified spaces</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="admin-stat-card stat-reserve">
+                                <div className="stat-card-inner">
+                                    <div className="stat-icon-box icon-reserve">
+                                        <FaCalendarCheck />
+                                    </div>
+                                    <div className="stat-details">
+                                        <span className="stat-label">Bookings</span>
+                                        <h2 className="stat-number">{reserve}</h2>
+                                        <div className="stat-trend positive">
+                                            <FaArrowUp /> <span>Table requests</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="admin-stat-card stat-reviews">
+                                <div className="stat-card-inner">
+                                    <div className="stat-icon-box icon-reviews">
+                                        <FaStar />
+                                    </div>
+                                    <div className="stat-details">
+                                        <span className="stat-label">User Reviews</span>
+                                        <h2 className="stat-number">{review}</h2>
+                                        <div className="stat-trend positive">
+                                            <FaArrowUp /> <span>Feedback submissions</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Manage Places Section */}
+                        <section className="admin-card-section" id="places">
+                            <AdminSectionHead title="Manage Workspaces & Places" count={filteredPlaces.length} icon={<FaStore />} />
+                            
+                            <div className="admin-table-card">
+                                <div className="table-responsive">
+                                    <table className="table admin-custom-table align-middle mb-0">
                                         <thead>
                                             <tr>
-                                                <th scope="col">Place Name</th>
-                                                <th scope="col">Address</th>
-                                                <th scope="col">City</th>
-                                                <th scope="col" className="text-end">Action</th>
+                                                <th>Place Name</th>
+                                                <th>Address</th>
+                                                <th>City</th>
+                                                <th className="text-end">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {
-                                                alllplaces.map((a) =>
+                                            {filteredPlaces.length > 0 ? (
+                                                filteredPlaces.map((a) => (
                                                     <tr key={a._id || a.Placename}>
-                                                        <td className="admin-place-name">{a.Placename}</td>
-                                                        <td className="admin-address-cell">{a.Address}</td>
-                                                        <td><span className="admin-status admin-status-visible">{a.City}</span></td>
-                                                        <td className="text-end"><button className="btn btn-outline-danger btn-sm" onClick={()=>removeplace(a._id)}>Remove</button></td>
-                                                    </tr>)
-                                            }
+                                                        <td className="fw-bold text-dark">
+                                                            <div className="d-flex align-items-center gap-2">
+                                                                <span className="place-avatar-badge">{a.Placename ? a.Placename.charAt(0) : "P"}</span>
+                                                                <span>{a.Placename}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="text-secondary">{a.Address || "No address provided"}</td>
+                                                        <td>
+                                                            <span className="city-pill">{a.City || "General"}</span>
+                                                        </td>
+                                                        <td className="text-end">
+                                                            <button 
+                                                                className="btn-action-delete" 
+                                                                onClick={() => removeplace(a._id)}
+                                                                title="Delete place"
+                                                            >
+                                                                <FaTrash /> Remove
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <EmptyTableRow colSpan={4} text="No matching places found." />
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>
-                            </AdminSection>
+                            </div>
                         </section>
 
-                        <section className="admin-section" id="categories">
-                            <AdminSection title="Manage Categories">
-                                <div className="row g-3">
-                                    {
-                                        allcat.map((a) =>
-                                            <div className="col-12 col-md-6 col-xl-4" key={a._id || a.Type}>
-                                                <div className="admin-category-card">
-                                                    <span>{a.Type}</span>
-                                                    <button className="btn btn-outline-danger btn-sm">Remove</button>
-                                                </div>
+                        {/* Manage Categories Section */}
+                        <section className="admin-card-section" id="categories">
+                            <AdminSectionHead title="Workspace Categories" count={allcat.length} icon={<FaTag />} />
+                            
+                            <div className="categories-grid-container">
+                                {allcat.length > 0 ? (
+                                    allcat.map((a) => (
+                                        <div className="category-item-card" key={a._id || a.Type}>
+                                            <div className="category-info">
+                                                <span className="category-icon-bubble"><FaTag /></span>
+                                                <span className="category-title">{a.Type}</span>
                                             </div>
-                                        )
-                                    }
-                                </div>
-                            </AdminSection>
+                                            <button className="btn-category-remove" title="Remove Category">
+                                                <FaTrash />
+                                            </button>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="empty-state-box">No categories configured.</div>
+                                )}
+                            </div>
                         </section>
 
-                        <section className="admin-section" id="users">
-                            <AdminSection title="Manage Users">
-                                <div className="table-responsive admin-table-wrap">
-                                    <table className="table table-hover align-middle admin-bootstrap-table mb-0">
+                        {/* Manage Users Section */}
+                        <section className="admin-card-section" id="users">
+                            <AdminSectionHead title="User Accounts Directory" count={filteredUsers.length} icon={<FaUsers />} />
+                            
+                            <div className="admin-table-card">
+                                <div className="table-responsive">
+                                    <table className="table admin-custom-table align-middle mb-0">
                                         <thead>
                                             <tr>
-                                                <th scope="col">Name</th>
-                                                <th scope="col">Email</th>
-                                                <th scope="col">UserID</th>
-                                                <th scope="col">UserType</th>
-                                                <th scope="col" className="text-end">Actions</th>
+                                                <th>User Name</th>
+                                                <th>Email Address</th>
+                                                <th>Account ID</th>
+                                                <th>Role</th>
+                                                <th className="text-end">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {
-                                                allusers.map((a) =>
+                                            {filteredUsers.length > 0 ? (
+                                                filteredUsers.map((a) => (
                                                     <tr key={a._id}>
                                                         <td>
-                                                            <div className="admin-user-cell">
-                                                                <span>{a.Name ? a.Name.charAt(0) : "U"}</span>
-                                                                <strong>{a.Name}</strong>
+                                                            <div className="admin-user-identity">
+                                                                <span className="user-avatar-circle">
+                                                                    {a.Name ? a.Name.charAt(0).toUpperCase() : "U"}
+                                                                </span>
+                                                                <span className="fw-semibold text-dark">{a.Name || "Unnamed User"}</span>
                                                             </div>
                                                         </td>
-                                                        <td>{a.Email}</td>
-                                                        <td className="admin-id-cell">{a._id}</td>
+                                                        <td className="text-muted">{a.Email}</td>
+                                                        <td className="user-id-mono">{a._id}</td>
                                                         <td>
-                                                            <span className="badge rounded-pill text-bg-primary">{a.UserType}</span>
+                                                            <span className={`role-badge ${a.UserType === "admin" ? "role-admin" : "role-user"}`}>
+                                                                {a.UserType || "User"}
+                                                            </span>
                                                         </td>
-                                                        <td>
-                                                            <div className="d-flex justify-content-end gap-2 flex-wrap">
-                                                                <button className="btn btn-outline-primary btn-sm" type="button">Change Type</button>
-                                                                <button className="btn btn-outline-danger btn-sm" type="button" onClick={()=>removeuser(a._id)}>Delete User</button>
+                                                        <td className="text-end">
+                                                            <div className="d-flex justify-content-end gap-2">
+                                                                <button 
+                                                                    className="btn-action-delete"
+                                                                    onClick={() => removeuser(a._id)}
+                                                                >
+                                                                    <FaTrash /> Delete
+                                                                </button>
                                                             </div>
                                                         </td>
-                                                    </tr>)
-                                            }
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <EmptyTableRow colSpan={5} text="No matching user accounts found." />
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>
-                            </AdminSection>
+                            </div>
                         </section>
 
-                        <section className="admin-section" id="reviews">
-                            <AdminSection title="Reviews And Feedback">
-                                <div className="row g-3">
-                                    {
-                                        reviews.map((a) =>
-                                            <div className="col-12 col-xl-6" key={a._id || `${a.Email}-${a.UserID}`}>
-                                                <div className="card admin-review-card h-100 border-0">
-                                                    <div className="card-body">
-                                                        <div className="d-flex justify-content-between gap-3 mb-3">
-                                                            <div>
-                                                                <h3 className="h6 mb-1">{a.Name}</h3>
-                                                                <p className="small mb-0">{a.Email}</p>
-                                                            </div>
-                                                            <span className="badge rounded-pill text-bg-warning">Review</span>
-                                                        </div>
-                                                        <p className="admin-review-message mb-3">{a.Msg}</p>
-                                                        <p className="small mb-0">UserID: {a.UserID}</p>
+                        {/* User Reviews & Feedback */}
+                        <section className="admin-card-section" id="reviews">
+                            <AdminSectionHead title="Community Reviews & Feedback" count={filteredReviews.length} icon={<FaStar />} />
+                            
+                            <div className="reviews-grid">
+                                {filteredReviews.length > 0 ? (
+                                    filteredReviews.map((a) => (
+                                        <div className="admin-review-card-item" key={a._id || `${a.Email}-${a.UserID}`}>
+                                            <div className="review-card-header">
+                                                <div className="review-author-box">
+                                                    <div className="author-avatar">
+                                                        {a.Name ? a.Name.charAt(0).toUpperCase() : "R"}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="author-name">{a.Name || "Anonymous"}</h4>
+                                                        <p className="author-email">{a.Email}</p>
                                                     </div>
                                                 </div>
-                                            </div>)
-                                    }
-                                </div>
-                            </AdminSection>
+                                                <div className="review-stars">
+                                                    <FaStar /><FaStar /><FaStar /><FaStar /><FaStar />
+                                                </div>
+                                            </div>
+                                            <div className="review-body">
+                                                <FaQuoteLeft className="quote-icon" />
+                                                <p className="review-text">{a.Msg || "No feedback message provided."}</p>
+                                            </div>
+                                            <div className="review-footer">
+                                                <span className="user-id-pill">UserID: {a.UserID}</span>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="empty-state-box w-100">No matching reviews found.</div>
+                                )}
+                            </div>
                         </section>
 
-                        <section className="admin-section" id="reservations">
-                            <AdminSection title="Manage Table Reservations">
-                                <div className="table-responsive admin-table-wrap">
-                                    <table className="table table-hover align-middle admin-bootstrap-table mb-0">
+                        {/* Table Reservations Management */}
+                        <section className="admin-card-section" id="reservations">
+                            <AdminSectionHead title="Table Reservations & Bookings" count={filteredReservations.length} icon={<FaCalendarCheck />} />
+                            
+                            <div className="admin-table-card">
+                                <div className="table-responsive">
+                                    <table className="table admin-custom-table align-middle mb-0">
                                         <thead>
                                             <tr>
-                                                <th scope="col">Place</th>
-                                                <th scope="col">Customer</th>
-                                                <th scope="col">Date & Time</th>
-                                                <th scope="col">Guests</th>
-                                                <th scope="col">Status</th>
-                                                <th scope="col" className="text-end">Actions</th>
+                                                <th>Workspace / Place</th>
+                                                <th>Customer Details</th>
+                                                <th>Date & Slot</th>
+                                                <th>Guests</th>
+                                                <th>Status</th>
+                                                <th className="text-end">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {allreservations.map((a) => (
-                                                <tr key={a._id}>
-                                                    <td className="fw-semibold">{a.Placename || "General Table"}</td>
-                                                    <td>
-                                                        <div>
-                                                            <strong>{a.Name}</strong>
-                                                            <div className="small text-muted">{a.Email} | {a.Phone}</div>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <div>{a.Date}</div>
-                                                        <small className="text-muted">{a.TimeSlot || "12:00 PM - 02:00 PM"}</small>
-                                                    </td>
-                                                    <td>{a.Guests} Guests</td>
-                                                    <td>
-                                                        <span className={`badge rounded-pill ${a.Status === "Confirmed" ? "text-bg-success" : "text-bg-warning"}`}>
-                                                            {a.Status || "Pending"}
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        <div className="d-flex justify-content-end gap-2 flex-wrap">
-                                                            {a.Status !== "Confirmed" && (
-                                                                <button
-                                                                    className="btn btn-outline-success btn-sm"
-                                                                    onClick={() => updateReservationStatus(a._id, "Confirmed")}
+                                            {filteredReservations.length > 0 ? (
+                                                filteredReservations.map((a) => (
+                                                    <tr key={a._id}>
+                                                        <td className="fw-bold text-dark">{a.Placename || "General Table"}</td>
+                                                        <td>
+                                                            <div className="customer-info-box">
+                                                                <strong>{a.Name || "Guest"}</strong>
+                                                                <div className="text-muted small">{a.Email} | {a.Phone || "N/A"}</div>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <div className="date-slot-box">
+                                                                <span className="fw-medium">{a.Date}</span>
+                                                                <small className="text-muted d-block">{a.TimeSlot || "Standard Slot"}</small>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <span className="guest-badge">{a.Guests || 1} Guests</span>
+                                                        </td>
+                                                        <td>
+                                                            <span className={`status-pill ${a.Status === "Confirmed" ? "status-confirmed" : "status-pending"}`}>
+                                                                {a.Status || "Pending"}
+                                                            </span>
+                                                        </td>
+                                                        <td className="text-end">
+                                                            <div className="d-flex justify-content-end gap-2">
+                                                                {a.Status !== "Confirmed" && (
+                                                                    <button 
+                                                                        className="btn-action-confirm"
+                                                                        onClick={() => updateReservationStatus(a._id, "Confirmed")}
+                                                                    >
+                                                                        <FaCheck /> Confirm
+                                                                    </button>
+                                                                )}
+                                                                <button 
+                                                                    className="btn-action-delete"
+                                                                    onClick={() => cancelReservationAdmin(a._id)}
                                                                 >
-                                                                    Confirm
+                                                                    <FaTrash /> Cancel
                                                                 </button>
-                                                            )}
-                                                            <button
-                                                                className="btn btn-outline-danger btn-sm"
-                                                                onClick={() => cancelReservationAdmin(a._id)}
-                                                            >
-                                                                Cancel
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <EmptyTableRow colSpan={6} text="No matching table reservations found." />
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>
-                            </AdminSection>
+                            </div>
                         </section>
                     </section>
                 </div>
@@ -386,18 +679,25 @@ export const Admin = () => {
     );
 };
 
-const AdminSection = ({ title, children }) => {
-    return (
-        <>
-            <div className="admin-section-head">
-                <div>
-                    <p className="section-kicker mb-1">Control Center</p>
-                    <h2>{title}</h2>
-                </div>
+const AdminSectionHead = ({ title, count, icon }) => (
+    <div className="admin-section-header">
+        <div className="d-flex align-items-center gap-3">
+            <span className="section-head-icon">{icon}</span>
+            <div>
+                <h3 className="section-title">{title}</h3>
+                <span className="section-subtitle">Showing {count} entries</span>
             </div>
-            <div className="admin-section-body">
-                {children}
+        </div>
+    </div>
+);
+
+const EmptyTableRow = ({ colSpan, text }) => (
+    <tr>
+        <td colSpan={colSpan} className="text-center py-4 text-muted">
+            <div className="empty-table-state">
+                <FaFilter className="mb-2 text-secondary" style={{ fontSize: '1.5rem' }} />
+                <p className="mb-0">{text}</p>
             </div>
-        </>
-    );
-};
+        </td>
+    </tr>
+);
