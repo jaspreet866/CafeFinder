@@ -61,7 +61,7 @@ export const Reserve = () => {
                 <div className="container">
                     <div className="row justify-content-center">
                         <div className="col-12 col-md-9 col-lg-6">
-                            <div className="form-panel shadow-sm p-4 rounded bg-white">
+                            <div className="form-panel shadow-sm p-4 rounded">
                                 <p className="section-kicker">Reserve your spot</p>
                                 <h1 className="mb-2">Book a Table</h1>
                                 {targetPlace ? (
@@ -167,4 +167,3 @@ export const Reserve = () => {
         </>
     )
 }
-

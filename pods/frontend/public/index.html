@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#f8fafc" />
     <meta
       name="description"
       content="WorkWave - Discover and book premium coworking spaces, quiet cafe workspaces, meeting rooms, and gaming lounges near you."
@@ -33,6 +33,14 @@
     <title>WorkWave</title>
   </head>
   <body>
+    <script>
+      (function () {
+        var darkMode = localStorage.getItem('theme') === 'dark';
+        document.documentElement.dataset.bsTheme = darkMode ? 'dark' : 'light';
+        document.documentElement.style.colorScheme = darkMode ? 'dark' : 'light';
+        if (darkMode) document.body.classList.add('dark-mode');
+      }());
+    </script>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
     <!--

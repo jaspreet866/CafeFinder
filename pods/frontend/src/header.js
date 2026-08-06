@@ -11,6 +11,7 @@ export const Header = () => {
 
     useEffect(() => {
         document.body.classList.toggle("dark-mode", darkMode);
+        document.documentElement.dataset.bsTheme = darkMode ? "dark" : "light";
         localStorage.setItem("theme", darkMode ? "dark" : "light");
     }, [darkMode]);
 
