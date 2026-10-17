@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Rating } from "react-simple-star-rating";
 import { showError, showInfo, showSuccess, showWarning } from "./alerts";
+import { getApiUrl } from "./apiConfig";
 
 export const Place = () => {
 
@@ -110,7 +111,7 @@ export const Place = () => {
       for (let i = 0; i < img.length; i++) {
         formData.append("images", img[i]);
       }
-      const result = await fetch("https://cafefinder-u2me.onrender.com/api/place",
+      const result = await fetch(getApiUrl("/api/place"),
         {
           method: "post",
           body: formData
@@ -140,7 +141,7 @@ export const Place = () => {
       form.append("category", category);
       form.append("pic", img2);
       const result = await fetch(
-        "https://cafefinder-u2me.onrender.com/api/category",
+        getApiUrl("/api/category"),
         {
           method: "POST",
           body: form
@@ -164,7 +165,7 @@ export const Place = () => {
     try {
 
       const result = await fetch(
-        "https://cafefinder-u2me.onrender.com/api/getcat"
+        getApiUrl("/api/getcat")
       );
 
       const res = await result.json();
@@ -312,17 +313,40 @@ export const Place = () => {
               </div>
 
               {/* IMAGE */}
+              <label className="fw-semibold mt-4 d-block">Place Photos:</label>
               <input
                 type="file"
                 multiple
-                className="form-control w-100 mt-4"
+                className="form-control w-100"
                 onChange={handlePlaceImages}
               />
 
               {img.length > 0 && (
-                <p className="text-muted small mt-2 mb-0">
-                  {img.length} image{img.length > 1 ? "s" : ""} selected
-                </p>
+                <div className="mt-3">
+                  <p className="text-muted small mb-2">
+                    {img.length} image{img.length > 1 ? "s" : ""} selected (click × to remove):
+                  </p>
+                  <div className="d-flex flex-wrap gap-2">
+                    {img.map((file, idx) => (
+                      <div key={idx} className="position-relative" style={{ width: '64px', height: '64px' }}>
+                        <img 
+                          src={URL.createObjectURL(file)} 
+                          alt={`preview ${idx}`} 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border-color, #dee2e6)' }}
+                        />
+                        <button 
+                          type="button" 
+                          className="btn btn-danger btn-sm p-0 position-absolute top-0 end-0 rounded-circle d-flex align-items-center justify-content-center"
+                          style={{ width: '20px', height: '20px', fontSize: '12px', transform: 'translate(30%, -30%)' }}
+                          onClick={() => setImg(prev => prev.filter((_, i) => i !== idx))}
+                          title="Remove image"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
 
               {/* BUTTON */}
@@ -346,14 +370,34 @@ export const Place = () => {
               <input
                 className="form-control"
                 placeholder="Set Place Type"
+                value={category}
                 onChange={(e) => setCategory(e.target.value)}
               />
 
+              <label className="fw-semibold mt-3 d-block small">Category Icon/Photo:</label>
               <input
                 type="file"
-                className="form-control mt-3"
+                className="form-control mt-1"
                 onChange={(e) => setImg2(e.target.files[0])}
               />
+
+              {img2 && (
+                <div className="mt-2 d-flex align-items-center gap-2">
+                  <img 
+                    src={URL.createObjectURL(img2)} 
+                    alt="Category preview" 
+                    style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '8px' }} 
+                  />
+                  <span className="small text-muted">{img2.name}</span>
+                  <button 
+                    type="button" 
+                    className="btn btn-sm btn-link text-danger p-0 ms-auto"
+                    onClick={() => setImg2(null)}
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
 
               <button
                 className="btn btn-primary mt-3 w-100"

@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { FaComments, FaPaperPlane, FaRobot, FaTimes } from "react-icons/fa"
+import { getApiUrl } from "./apiConfig"
 
 export const Chatbot = () => {
   const [open, setOpen] = useState(false)
@@ -20,7 +21,7 @@ export const Chatbot = () => {
     setLoading(true)
 
     try {
-      const result = await fetch("https://cafefinder-u2me.onrender.com/api/chat", {
+      const result = await fetch(getApiUrl("/api/chat"), {
         method: "POST",
         body: JSON.stringify({ message: input }),
         headers: {

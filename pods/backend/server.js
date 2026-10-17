@@ -63,11 +63,20 @@ const getLocalChatReply = (message = "") => {
 }
 
 app.use(cors({
-    origin: [
-        "https://cafefinder-u2me.onrender.com",
-        "https://cafe-finder-amber.vercel.app",
-        "http://localhost:3000"
-    ]
+    origin: (origin, callback) => {
+        if (!origin || 
+            /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || 
+            origin.includes("vercel.app") || 
+            origin.includes("onrender.com")
+        ) {
+            callback(null, true);
+        } else {
+            callback(null, true);
+        }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"]
 }))
 app.use(express.json())
 
@@ -107,14 +116,14 @@ const register = mongoose.Schema({
 const user = mongoose.model("Users", register)
 
 app.post("/api/register", async (req, res) => {
-    const hash = bcrypt.hashSync(req.body.pass, 10)
-    const result = new user({
-        Name: req.body.name,
-        Email: req.body.email,
-        Password: hash,
-        UserType: "User"
-    })
-    if (result) {
+    try {
+        const hash = bcrypt.hashSync(req.body.pass, 10)
+        const result = new user({
+            Name: req.body.name,
+            Email: req.body.email,
+            Password: hash,
+            UserType: req.body.userType || req.body.usertype || "User"
+        })
         const response = await result.save()
         if (response) {
             res.send({ statuscode: 1 })
@@ -122,6 +131,9 @@ app.post("/api/register", async (req, res) => {
         else {
             res.send({ statuscode: 0 })
         }
+    } catch (err) {
+        console.error("Register error:", err)
+        res.status(500).send({ statuscode: 0, message: err.message })
     }
 })
 
@@ -146,16 +158,38 @@ app.delete("/api/removeuser/:id", async (req, res) => {
 })
 
 app.post("/api/login", async (req, res) => {
+    try {
+        const rawEmail = req.body.email ? String(req.body.email).trim() : "";
+        const rawPass = req.body.pass ? String(req.body.pass) : "";
 
-    const result = await user.findOne({ Email: req.body.email })
-    const respass = result.Password
-    const pass2 = bcrypt.compareSync(req.body.pass, respass)
-    if (pass2 === true) {
-        let token = jwt.sign({ id: result._id, mail: result.Email, usrtype: result.UserType }, key, { expiresIn: "1h" })
-        res.send({ statuscode: 1, data: result, jwtoken: token })
-    }
-    else {
-        res.send({ statuscode: 0 })
+        if (!rawEmail || !rawPass) {
+            return res.send({ statuscode: 0, message: "Email and password are required" });
+        }
+
+        // Case-insensitive email search so users can log in regardless of email casing
+        const escapedEmail = rawEmail.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+        const result = await user.findOne({
+            Email: { $regex: new RegExp(`^${escapedEmail}$`, "i") }
+        });
+
+        if (!result || !result.Password) {
+            return res.send({ statuscode: 0, message: "Invalid email or password" });
+        }
+
+        const passMatches = bcrypt.compareSync(rawPass, result.Password);
+        if (passMatches === true) {
+            let token = jwt.sign(
+                { id: result._id, mail: result.Email, usrtype: result.UserType },
+                key,
+                { expiresIn: "7d" }
+            );
+            res.send({ statuscode: 1, data: result, jwtoken: token });
+        } else {
+            res.send({ statuscode: 0, message: "Invalid email or password" });
+        }
+    } catch (err) {
+        console.error("Login route error:", err);
+        res.status(500).send({ statuscode: 0, message: "Error during authentication" });
     }
 })
 
@@ -218,8 +252,16 @@ app.get("/api/getcat", async (req, res) => {
     }
 })
 
-const place = new mongoose.Schema({
+app.delete("/api/removecategory/:id", async (req, res) => {
+    try {
+        const result = await cate.deleteOne({ _id: req.params.id })
+        res.send({ statuscode: result.deletedCount > 0 ? 1 : 0 })
+    } catch (err) {
+        res.status(500).send({ statuscode: 0, message: err.message })
+    }
+})
 
+const place = new mongoose.Schema({
     Placename: String,
     Type: String,
     Rating: Number,
@@ -233,8 +275,9 @@ const place = new mongoose.Schema({
     Location: {
         lat: Number,
         lng: Number
-    }
-
+    },
+    OwnerId: String,
+    OwnerEmail: String
 });
 const addedplace = mongoose.model("Place", place)
 
@@ -243,25 +286,31 @@ app.post("/api/place", upload.array("images", 10), async (req, res) => {
         if (!req.files || req.files.length === 0) {
             return res.status(400).send({ statuscode: 0, message: "image is required" })
         }
+
+        const latVal = Number(req.body.lat) || 28.6139;
+        const lngVal = Number(req.body.lng) || 77.2090;
+
         const result = new addedplace({
             Placename: req.body.name,
             About: req.body.about,
             Type: req.body.type,
-            Rating: req.body.rating,
-            WiFi: req.body.wifi,
-            Meeting: req.body.meeting,
-            Gaming: req.body.gaming,
+            Rating: Number(req.body.rating) || 4.5,
+            WiFi: req.body.wifi === "true" || req.body.wifi === true,
+            Meeting: req.body.meeting === "true" || req.body.meeting === true,
+            Gaming: req.body.gaming === "true" || req.body.gaming === true,
             Address: req.body.address,
             City: req.body.city,
             Image: req.files.map(file => file.path),
             Location: {
-                lat: Number(req.body.lat),
-                lng: Number(req.body.lng)
+                lat: latVal,
+                lng: lngVal
             },
+            OwnerId: req.body.ownerId || "",
+            OwnerEmail: req.body.ownerEmail || ""
         })
         const response = await result.save()
         if (response) {
-            res.send({ statuscode: 1, imageCount: req.files.length })
+            res.send({ statuscode: 1, imageCount: req.files.length, data: response })
         }
         else {
             res.send({ statuscode: 0 })
@@ -272,6 +321,32 @@ app.post("/api/place", upload.array("images", 10), async (req, res) => {
         res.status(500).send({ statuscode: 0, message: "place not added" })
     }
 })
+
+app.get("/api/allplaces", async (req, res) => {
+    try {
+        const result = await addedplace.find().sort({ _id: -1 })
+        res.send({ statuscode: 1, data: result || [] })
+    } catch (err) {
+        res.status(500).send({ statuscode: 0, message: err.message })
+    }
+})
+
+app.get("/api/owner/places/:ownerId", async (req, res) => {
+    try {
+        const ownerId = req.params.ownerId
+        const ownerEmail = req.query.email || ""
+        const result = await addedplace.find({
+            $or: [
+                { OwnerId: ownerId },
+                { OwnerEmail: { $exists: true, $eq: ownerEmail, $ne: "" } }
+            ]
+        }).sort({ _id: -1 })
+        res.send({ statuscode: 1, data: result || [] })
+    } catch (err) {
+        res.status(500).send({ statuscode: 0, message: err.message })
+    }
+})
+
 app.get("/api/showplace", async (req, res) => {
     const result = await addedplace.find().sort({ _id: -1 }).limit(6)
     if (result) {
@@ -352,34 +427,49 @@ const review = new mongoose.Schema({
     Email: String,
     Msg: String,
     Rating: Number,
-    UserID: String
-
+    UserID: String,
+    Images: [String],
+    Likes: { type: Number, default: 0 },
+    LikedBy: [String],
+    OwnerReply: {
+        text: String,
+        replyDate: String
+    }
 })
 
 const userReview = mongoose.model("Reviews", review)
 
-app.post("/api/review", async (req, res) => {
-    const result = new userReview({
-        Date: new Date(),
-        ID: req.body.prr,
-        Name: req.body.user,
-        Email: req.body.usermail,
-        Msg: req.body.msg,
-        Rating: req.body.rating2,
-        UserID: req.body.id
-    })
-    if (result) {
+app.post("/api/review", upload.array("images", 5), async (req, res) => {
+    try {
+        const uploadedImages = req.files && req.files.length > 0 ? req.files.map(file => file.path) : []
+        const result = new userReview({
+            Date: new Date().toISOString(),
+            ID: req.body.prr,
+            Name: req.body.user,
+            Email: req.body.usermail,
+            Msg: req.body.msg,
+            Rating: Number(req.body.rating2) || 5,
+            UserID: req.body.id || "",
+            Images: uploadedImages,
+            Likes: 0,
+            LikedBy: [],
+            OwnerReply: null
+        })
         const response = await result.save()
         if (response) {
-            res.send({ statuscode: 1 })
+            res.send({ statuscode: 1, data: response })
         }
         else {
             res.send({ statuscode: 0 })
         }
+    } catch (err) {
+        console.error("Review save error:", err)
+        res.status(500).send({ statuscode: 0, message: err.message })
     }
 })
+
 app.get("/api/getreview/:id", async (req, res) => {
-    const result = await userReview.find({ ID: req.params.id }).sort({ _id: -1 }).limit(2)
+    const result = await userReview.find({ ID: req.params.id }).sort({ _id: -1 })
     if (result) {
         res.send({ statuscode: 1, data: result })
     }
@@ -414,6 +504,57 @@ app.get("/api/userreviews/:id", async (req, res) => {
     }
 })
 
+app.delete("/api/removereview/:id", async (req, res) => {
+    try {
+        const result = await userReview.deleteOne({ _id: req.params.id })
+        res.send({ statuscode: result.deletedCount > 0 ? 1 : 0 })
+    } catch (err) {
+        res.status(500).send({ statuscode: 0, message: err.message })
+    }
+})
+
+app.post("/api/review/:id/like", async (req, res) => {
+    try {
+        const { userId } = req.body
+        const rev = await userReview.findById(req.params.id)
+        if (!rev) return res.status(404).send({ statuscode: 0, message: "Review not found" })
+
+        const likedBy = rev.LikedBy || []
+        const userIdentifier = userId || "anonymous"
+        const alreadyLiked = likedBy.includes(userIdentifier)
+
+        if (alreadyLiked) {
+            rev.LikedBy = likedBy.filter(u => u !== userIdentifier)
+            rev.Likes = Math.max(0, (rev.Likes || 1) - 1)
+        } else {
+            rev.LikedBy.push(userIdentifier)
+            rev.Likes = (rev.Likes || 0) + 1
+        }
+
+        await rev.save()
+        res.send({ statuscode: 1, likes: rev.Likes, liked: !alreadyLiked })
+    } catch (err) {
+        res.status(500).send({ statuscode: 0, message: err.message })
+    }
+})
+
+app.post("/api/review/:id/reply", async (req, res) => {
+    try {
+        const { reply } = req.body
+        const rev = await userReview.findById(req.params.id)
+        if (!rev) return res.status(404).send({ statuscode: 0, message: "Review not found" })
+
+        rev.OwnerReply = {
+            text: reply,
+            replyDate: new Date().toISOString()
+        }
+        await rev.save()
+        res.send({ statuscode: 1, data: rev })
+    } catch (err) {
+        res.status(500).send({ statuscode: 0, message: err.message })
+    }
+})
+
 //reservation schema model
 
 const Table = mongoose.Schema({
@@ -426,32 +567,65 @@ const Table = mongoose.Schema({
     PlaceID: String,
     Placename: String,
     TimeSlot: String,
-    Status: { type: String, default: "Pending" }
+    Status: { type: String, default: "Pending" },
+    PreOrderItems: [{
+        name: String,
+        price: Number,
+        qty: Number
+    }],
+    PreOrderTotal: { type: Number, default: 0 },
+    OwnerId: String,
+    OwnerEmail: String,
+    CreatedAt: { type: Date, default: Date.now }
 })
 
 const booktable = new mongoose.model("Reservations", Table)
 
 app.post("/api/reservation", async (req, res) => {
-    const result = new booktable({
-        Name: req.body.name,
-        Email: req.body.email,
-        Guests: req.body.guest,
-        Date: req.body.date,
-        Phone: req.body.phone,
-        UserID: req.body.userId || req.body.id || "",
-        PlaceID: req.body.placeId || "",
-        Placename: req.body.placename || req.body.placeName || "General Table",
-        TimeSlot: req.body.timeSlot || "12:00 PM - 02:00 PM",
-        Status: "Pending"
-    })
-    if (result) {
+    try {
+        let parsedPreOrder = []
+        if (req.body.preOrderItems) {
+            parsedPreOrder = typeof req.body.preOrderItems === "string" 
+                ? JSON.parse(req.body.preOrderItems) 
+                : req.body.preOrderItems
+        }
+
+        let ownerId = req.body.ownerId || ""
+        let ownerEmail = req.body.ownerEmail || ""
+        if (req.body.placeId) {
+            const pl = await addedplace.findById(req.body.placeId).catch(() => null)
+            if (pl) {
+                ownerId = ownerId || pl.OwnerId || ""
+                ownerEmail = ownerEmail || pl.OwnerEmail || ""
+            }
+        }
+
+        const result = new booktable({
+            Name: req.body.name,
+            Email: req.body.email,
+            Guests: Number(req.body.guest) || 1,
+            Date: req.body.date,
+            Phone: Number(req.body.phone) || 0,
+            UserID: req.body.userId || req.body.id || "",
+            PlaceID: req.body.placeId || "",
+            Placename: req.body.placename || req.body.placeName || "General Table",
+            TimeSlot: req.body.timeSlot || "12:00 PM - 02:00 PM",
+            Status: "Pending",
+            PreOrderItems: parsedPreOrder,
+            PreOrderTotal: Number(req.body.preOrderTotal || 0),
+            OwnerId: ownerId,
+            OwnerEmail: ownerEmail
+        })
         const response = await result.save()
         if (response) {
-            res.send({ statuscode: 1 })
+            res.send({ statuscode: 1, data: response })
         }
         else {
             res.send({ statuscode: 0 })
         }
+    } catch (err) {
+        console.error("Reservation error:", err)
+        res.status(500).send({ statuscode: 0, message: err.message })
     }
 })
 
@@ -502,38 +676,313 @@ app.post("/api/updatereservationstatus", async (req, res) => {
     }
 })
 
+// Owner Reservations & Reviews
+app.get("/api/owner/reservations/:ownerId", async (req, res) => {
+    try {
+        const ownerId = req.params.ownerId
+        const ownerEmail = req.query.email || ""
+        
+        const places = await addedplace.find({
+            $or: [
+                { OwnerId: ownerId },
+                { OwnerEmail: { $exists: true, $eq: ownerEmail, $ne: "" } }
+            ]
+        })
+        const placeIds = places.map(p => p._id.toString())
+        const placeNames = places.map(p => p.Placename)
 
+        const reservations = await booktable.find({
+            $or: [
+                { OwnerId: ownerId },
+                { OwnerEmail: { $exists: true, $eq: ownerEmail, $ne: "" } },
+                { PlaceID: { $in: placeIds } },
+                { Placename: { $in: placeNames } }
+            ]
+        }).sort({ _id: -1 })
+
+        res.send({ statuscode: 1, data: reservations || [] })
+    } catch (err) {
+        res.status(500).send({ statuscode: 0, message: err.message })
+    }
+})
+
+app.get("/api/owner/reviews/:ownerId", async (req, res) => {
+    try {
+        const ownerId = req.params.ownerId
+        const ownerEmail = req.query.email || ""
+
+        const places = await addedplace.find({
+            $or: [
+                { OwnerId: ownerId },
+                { OwnerEmail: { $exists: true, $eq: ownerEmail, $ne: "" } }
+            ]
+        })
+        const placeIds = places.map(p => p._id.toString())
+
+        const reviews = await userReview.find({ ID: { $in: placeIds } }).sort({ _id: -1 })
+        res.send({ statuscode: 1, data: reviews || [] })
+    } catch (err) {
+        res.status(500).send({ statuscode: 0, message: err.message })
+    }
+})
+
+// Digital Menu Item Model & Endpoints
+const menuItemSchema = new mongoose.Schema({
+    PlaceID: { type: String, required: true },
+    Name: { type: String, required: true },
+    Category: { type: String, default: "Beverage" },
+    Price: { type: Number, required: true },
+    Description: { type: String, default: "" },
+    IsVeg: { type: Boolean, default: true },
+    InStock: { type: Boolean, default: true },
+    Image: { type: String, default: "" }
+})
+
+const MenuItem = mongoose.model("MenuItems", menuItemSchema)
+
+app.get("/api/menu/:placeId", async (req, res) => {
+    try {
+        const items = await MenuItem.find({ PlaceID: req.params.placeId }).sort({ _id: -1 })
+        res.send({ statuscode: 1, data: items || [] })
+    } catch (err) {
+        res.status(500).send({ statuscode: 0, message: err.message })
+    }
+})
+
+app.post("/api/menu", upload.single("pic"), async (req, res) => {
+    try {
+        const item = new MenuItem({
+            PlaceID: req.body.placeId,
+            Name: req.body.name,
+            Category: req.body.category || "Beverage",
+            Price: Number(req.body.price) || 0,
+            Description: req.body.description || "",
+            IsVeg: req.body.isVeg === "true" || req.body.isVeg === true,
+            InStock: true,
+            Image: req.file ? req.file.path : (req.body.image || "")
+        })
+        const saved = await item.save()
+        res.send({ statuscode: 1, data: saved })
+    } catch (err) {
+        console.error("Menu save error:", err)
+        res.status(500).send({ statuscode: 0, message: err.message })
+    }
+})
+
+app.delete("/api/menu/:id", async (req, res) => {
+    try {
+        const result = await MenuItem.deleteOne({ _id: req.params.id })
+        res.send({ statuscode: result.deletedCount > 0 ? 1 : 0 })
+    } catch (err) {
+        res.status(500).send({ statuscode: 0, message: err.message })
+    }
+})
+
+app.put("/api/menu/:id/toggle", async (req, res) => {
+    try {
+        const item = await MenuItem.findById(req.params.id)
+        if (!item) return res.status(404).send({ statuscode: 0, message: "Item not found" })
+        item.InStock = !item.InStock
+        await item.save()
+        res.send({ statuscode: 1, inStock: item.InStock })
+    } catch (err) {
+        res.status(500).send({ statuscode: 0, message: err.message })
+    }
+})
+
+
+
+//hotel booking
 
 //hotel booking
 
 const hotel = mongoose.Schema({
     Name: String,
     Email: String,
+    Phone: String,
     RoomType: String,
-    Rooms: Number,
+    Rooms: { type: Number, default: 1 },
     CheckIn: String,
-    CheckOut: String
+    CheckOut: String,
+    PlaceID: String,
+    Placename: String,
+    OwnerId: String,
+    OwnerEmail: String,
+    UserID: String,
+    Status: { type: String, default: "Pending" },
+    CreatedAt: { type: Date, default: Date.now }
 })
 
 const bookhotel = mongoose.model("/hotels", hotel)
 
 app.post("/api/hotel", async (req, res) => {
-    const result = await new bookhotel({
-        Name: req.body.name,
-        Email: req.body.email,
-        RoomType: req.body.type,
-        Rooms: req.body.room,
-        CheckIn: req.body.checkin,
-        CheckOut: req.body.checkout
-    })
-    if (result) {
+    try {
+        let ownerId = req.body.ownerId || ""
+        let ownerEmail = req.body.ownerEmail || ""
+        if (req.body.placeId) {
+            const pl = await addedplace.findById(req.body.placeId).catch(() => null)
+            if (pl) {
+                ownerId = ownerId || pl.OwnerId || ""
+                ownerEmail = ownerEmail || pl.OwnerEmail || ""
+            }
+        }
+
+        const result = new bookhotel({
+            Name: req.body.name,
+            Email: req.body.email,
+            Phone: req.body.phone || "",
+            RoomType: req.body.type || "Standard Room",
+            Rooms: Number(req.body.room) || 1,
+            CheckIn: req.body.checkin,
+            CheckOut: req.body.checkout,
+            PlaceID: req.body.placeId || "",
+            Placename: req.body.placename || "Hotel Room",
+            UserID: req.body.userId || "",
+            OwnerId: ownerId,
+            OwnerEmail: ownerEmail,
+            Status: "Pending"
+        })
         const response = await result.save()
         if (response) {
-            res.send({ statuscode: 1 })
-        }
-        else {
+            res.send({ statuscode: 1, data: response })
+        } else {
             res.send({ statuscode: 0 })
         }
+    } catch (err) {
+        res.status(500).send({ statuscode: 0, message: err.message })
+    }
+})
+
+// Owner Hotel Bookings
+app.get("/api/owner/hotel-bookings/:ownerId", async (req, res) => {
+    try {
+        const ownerId = req.params.ownerId
+        const ownerEmail = req.query.email || ""
+        
+        const places = await addedplace.find({
+            $or: [
+                { OwnerId: ownerId },
+                { OwnerEmail: { $exists: true, $eq: ownerEmail, $ne: "" } }
+            ]
+        })
+        const placeIds = places.map(p => p._id.toString())
+        const placeNames = places.map(p => p.Placename)
+
+        const bookings = await bookhotel.find({
+            $or: [
+                { OwnerId: ownerId },
+                { OwnerEmail: { $exists: true, $eq: ownerEmail, $ne: "" } },
+                { PlaceID: { $in: placeIds } },
+                { Placename: { $in: placeNames } }
+            ]
+        }).sort({ _id: -1 })
+
+        res.send({ statuscode: 1, data: bookings || [] })
+    } catch (err) {
+        res.status(500).send({ statuscode: 0, message: err.message })
+    }
+})
+
+// Update Hotel Booking Status (Confirm / Decline)
+app.post("/api/updatehotelstatus", async (req, res) => {
+    try {
+        const { id, status } = req.body
+        const result = await bookhotel.updateOne({ _id: id }, { $set: { Status: status } })
+        if (result.modifiedCount > 0) {
+            res.send({ statuscode: 1 })
+        } else {
+            res.send({ statuscode: 0 })
+        }
+    } catch (err) {
+        res.status(500).send({ statuscode: 0, message: err.message })
+    }
+})
+
+// Cancel Hotel Booking
+app.delete("/api/cancelhotel/:id", async (req, res) => {
+    try {
+        const result = await bookhotel.deleteOne({ _id: req.params.id })
+        res.send({ statuscode: result.deletedCount > 0 ? 1 : 0 })
+    } catch (err) {
+        res.status(500).send({ statuscode: 0, message: err.message })
+    }
+})
+
+// Admin Hotel Bookings
+app.get("/api/hotel", async (req, res) => {
+    try {
+        const bookings = await bookhotel.find().sort({ _id: -1 })
+        res.send({ statuscode: 1, data: bookings || [] })
+    } catch (err) {
+        res.status(500).send({ statuscode: 0, message: err.message })
+    }
+})
+
+// Owner Total Pending Requests Count (for Navigation Badge)
+app.get("/api/owner/pending-count/:ownerId", async (req, res) => {
+    try {
+        const ownerId = req.params.ownerId
+        const ownerEmail = req.query.email || ""
+        
+        const places = await addedplace.find({
+            $or: [
+                { OwnerId: ownerId },
+                { OwnerEmail: { $exists: true, $eq: ownerEmail, $ne: "" } }
+            ]
+        })
+        const placeIds = places.map(p => p._id.toString())
+        const placeNames = places.map(p => p.Placename)
+
+        const pendingTables = await booktable.countDocuments({
+            $and: [
+                {
+                    $or: [
+                        { Status: "Pending" },
+                        { Status: { $exists: false } },
+                        { Status: null },
+                        { Status: "" }
+                    ]
+                },
+                {
+                    $or: [
+                        { OwnerId: ownerId },
+                        { OwnerEmail: { $exists: true, $eq: ownerEmail, $ne: "" } },
+                        { PlaceID: { $in: placeIds } },
+                        { Placename: { $in: placeNames } }
+                    ]
+                }
+            ]
+        })
+
+        const pendingRooms = await bookhotel.countDocuments({
+            $and: [
+                {
+                    $or: [
+                        { Status: "Pending" },
+                        { Status: { $exists: false } },
+                        { Status: null },
+                        { Status: "" }
+                    ]
+                },
+                {
+                    $or: [
+                        { OwnerId: ownerId },
+                        { OwnerEmail: { $exists: true, $eq: ownerEmail, $ne: "" } },
+                        { PlaceID: { $in: placeIds } },
+                        { Placename: { $in: placeNames } }
+                    ]
+                }
+            ]
+        })
+
+        res.send({
+            statuscode: 1,
+            pendingCount: pendingTables + pendingRooms,
+            pendingTables,
+            pendingRooms
+        })
+    } catch (err) {
+        res.status(500).send({ statuscode: 0, message: err.message, pendingCount: 0 })
     }
 })
 
@@ -608,6 +1057,19 @@ app.get("/api/favourite/:id", async (req, res) => {
     }
     else {
         res.send({ statuscode: 0 })
+    }
+})
+
+app.delete("/api/wishlist/:id", async (req, res) => {
+    try {
+        const result = await wlist.findByIdAndDelete(req.params.id);
+        if (result) {
+            res.send({ statuscode: 1, message: "Item removed from wishlist" });
+        } else {
+            res.send({ statuscode: 0, message: "Item not found" });
+        }
+    } catch (err) {
+        res.status(500).send({ statuscode: 0, message: "Server error" });
     }
 })
 

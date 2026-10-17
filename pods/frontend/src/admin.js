@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { showError } from "./alerts";
 import Swal from "sweetalert2";
+import { Rating } from "react-simple-star-rating";
+import { getApiUrl } from "./apiConfig";
 import { 
     FaUsers, 
     FaStore, 
@@ -37,12 +39,21 @@ export const Admin = () => {
 
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    const [debouncedQuery, setDebouncedQuery] = useState("");
     const [activeSection, setActiveSection] = useState("dashboard");
 
     // Pagination State
     const [placesPage, setPlacesPage] = useState(1);
     const [usersPage, setUsersPage] = useState(1);
     const [reservationsPage, setReservationsPage] = useState(1);
+
+    // Debounce search input to optimize filtering performance
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedQuery(searchQuery);
+        }, 300);
+        return () => clearTimeout(handler);
+    }, [searchQuery]);
 
     useEffect(() => {
         fetchAllData();
@@ -53,7 +64,7 @@ export const Admin = () => {
         setPlacesPage(1);
         setUsersPage(1);
         setReservationsPage(1);
-    }, [searchQuery]);
+    }, [debouncedQuery]);
 
     const fetchAllData = async () => {
         setLoading(true);
@@ -63,7 +74,7 @@ export const Admin = () => {
 
     const show = async () => {
         try {
-            const result = await fetch("https://cafefinder-u2me.onrender.com/api/getusers");
+            const result = await fetch(getApiUrl("/api/getusers"));
             if (result.ok) {
                 const res = await result.json();
                 if (res.statuscode === 1) {
@@ -78,7 +89,7 @@ export const Admin = () => {
 
     const show2 = async () => {
         try {
-            const result = await fetch("https://cafefinder-u2me.onrender.com/api/showplace");
+            const result = await fetch(getApiUrl("/api/showplace"));
             if (result.ok) {
                 const res = await result.json();
                 if (res.statuscode === 1) {
@@ -93,7 +104,7 @@ export const Admin = () => {
 
     const show3 = async () => {
         try {
-            const result = await fetch("https://cafefinder-u2me.onrender.com/api/reservations");
+            const result = await fetch(getApiUrl("/api/reservations"));
             if (result.ok) {
                 const res = await result.json();
                 if (res.statuscode === 1) {
@@ -108,7 +119,7 @@ export const Admin = () => {
 
     const show4 = async () => {
         try {
-            const result = await fetch("https://cafefinder-u2me.onrender.com/api/allreviews");
+            const result = await fetch(getApiUrl("/api/allreviews"));
             if (result.ok) {
                 const res = await result.json();
                 if (res.statuscode === 1) {
@@ -123,7 +134,7 @@ export const Admin = () => {
 
     const show5 = async () => {
         try {
-            const result = await fetch("https://cafefinder-u2me.onrender.com/api/getcat");
+            const result = await fetch(getApiUrl("/api/getcat"));
             if (result.ok) {
                 const res = await result.json();
                 if (res.statuscode === 1) {
@@ -139,7 +150,7 @@ export const Admin = () => {
 
     const updateReservationStatus = async (id, status) => {
         try {
-            const result = await fetch("https://cafefinder-u2me.onrender.com/api/updatereservationstatus", {
+            const result = await fetch(getApiUrl("/api/updatereservationstatus"), {
                 method: "post",
                 body: JSON.stringify({ id, status }),
                 headers: { "Content-type": "application/json;charset=UTF-8" }
@@ -175,7 +186,7 @@ export const Admin = () => {
 
         if (confirm.isConfirmed) {
             try {
-                const result = await fetch(`https://cafefinder-u2me.onrender.com/api/cancelreservation/${id}`, {
+                const result = await fetch(getApiUrl(`/api/cancelreservation/${id}`), {
                     method: "delete"
                 });
                 if (result.ok) {
@@ -204,7 +215,7 @@ export const Admin = () => {
 
         if (confirm.isConfirmed) {
             try {
-                const result = await fetch(`https://cafefinder-u2me.onrender.com/api/removeuser/${id}`, {
+                const result = await fetch(getApiUrl(`/api/removeuser/${id}`), {
                     method: "delete"
                 });
                 if (result.ok) {
@@ -235,7 +246,7 @@ export const Admin = () => {
 
         if (confirm.isConfirmed) {
             try {
-                const result = await fetch(`https://cafefinder-u2me.onrender.com/api/removeplace/${id}`, {
+                const result = await fetch(getApiUrl(`/api/removeplace/${id}`), {
                     method: "delete"
                 });
                 if (result.ok) {
@@ -253,8 +264,70 @@ export const Admin = () => {
         }
     };
 
+    const removecategory = async (id, type) => {
+        const confirm = await Swal.fire({
+            title: 'Delete Category?',
+            text: `Are you sure you want to delete the category "${type || 'this'}"?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e63946',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, delete category'
+        });
+
+        if (confirm.isConfirmed) {
+            try {
+                const result = await fetch(getApiUrl(`/api/removecategory/${id}`), {
+                    method: "delete"
+                });
+                if (result.ok) {
+                    const res = await result.json();
+                    if (res.statuscode === 1) {
+                        Swal.fire('Deleted!', 'Category has been removed.', 'success');
+                        show5();
+                    } else {
+                        Swal.fire('Failed', 'Could not delete category.', 'error');
+                    }
+                }
+            } catch (err) {
+                showError("Error", "Server error while removing category.");
+            }
+        }
+    };
+
+    const removereview = async (id) => {
+        const confirm = await Swal.fire({
+            title: 'Delete Review?',
+            text: "Are you sure you want to remove this customer review?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e63946',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, delete review'
+        });
+
+        if (confirm.isConfirmed) {
+            try {
+                const result = await fetch(getApiUrl(`/api/removereview/${id}`), {
+                    method: "delete"
+                });
+                if (result.ok) {
+                    const res = await result.json();
+                    if (res.statuscode === 1) {
+                        Swal.fire('Deleted!', 'Review has been removed.', 'success');
+                        show4();
+                    } else {
+                        Swal.fire('Failed', 'Could not delete review.', 'error');
+                    }
+                }
+            } catch (err) {
+                showError("Error", "Server error while removing review.");
+            }
+        }
+    };
+
     // Filter Helpers
-    const q = searchQuery.toLowerCase().trim();
+    const q = debouncedQuery.toLowerCase().trim();
 
     const filteredPlaces = alllplaces.filter(p => 
         !q || (p.Placename && p.Placename.toLowerCase().includes(q)) || 
@@ -305,57 +378,58 @@ export const Admin = () => {
 
                         <nav className="admin-nav-menu">
                             <button 
+                                type="button"
                                 className={`admin-nav-item ${activeSection === "dashboard" ? "active" : ""}`}
                                 onClick={() => setActiveSection("dashboard")}
                             >
                                 <FaChartLine className="nav-icon" />
                                 <span>Overview Dashboard</span>
                             </button>
-                            <a 
-                                href="#places" 
+                            <button 
+                                type="button"
                                 className={`admin-nav-item ${activeSection === "places" ? "active" : ""}`}
                                 onClick={() => setActiveSection("places")}
                             >
                                 <FaStore className="nav-icon" />
                                 <span>Places</span>
                                 <span className="admin-nav-count">{place}</span>
-                            </a>
-                            <a 
-                                href="#categories" 
+                            </button>
+                            <button 
+                                type="button"
                                 className={`admin-nav-item ${activeSection === "categories" ? "active" : ""}`}
                                 onClick={() => setActiveSection("categories")}
                             >
                                 <FaTag className="nav-icon" />
                                 <span>Categories</span>
                                 <span className="admin-nav-count">{allcat.length}</span>
-                            </a>
-                            <a 
-                                href="#users" 
+                            </button>
+                            <button 
+                                type="button"
                                 className={`admin-nav-item ${activeSection === "users" ? "active" : ""}`}
                                 onClick={() => setActiveSection("users")}
                             >
                                 <FaUsers className="nav-icon" />
                                 <span>Users</span>
                                 <span className="admin-nav-count">{users}</span>
-                            </a>
-                            <a 
-                                href="#reviews" 
+                            </button>
+                            <button 
+                                type="button"
                                 className={`admin-nav-item ${activeSection === "reviews" ? "active" : ""}`}
                                 onClick={() => setActiveSection("reviews")}
                             >
                                 <FaStar className="nav-icon" />
                                 <span>Reviews</span>
                                 <span className="admin-nav-count">{review}</span>
-                            </a>
-                            <a 
-                                href="#reservations" 
+                            </button>
+                            <button 
+                                type="button"
                                 className={`admin-nav-item ${activeSection === "reservations" ? "active" : ""}`}
                                 onClick={() => setActiveSection("reservations")}
                             >
                                 <FaCalendarCheck className="nav-icon" />
                                 <span>Reservations</span>
                                 <span className="admin-nav-count">{reserve}</span>
-                            </a>
+                            </button>
                         </nav>
 
                         <div className="admin-sidebar-footer">
@@ -396,7 +470,12 @@ export const Admin = () => {
 
                         {/* Metric Stat Cards */}
                         <div className="admin-stats-grid">
-                            <div className="admin-stat-card stat-users">
+                            <div 
+                                className={`admin-stat-card stat-users ${activeSection === "users" ? "active-stat" : ""}`}
+                                onClick={() => setActiveSection(activeSection === "users" ? "dashboard" : "users")}
+                                style={{ cursor: "pointer" }}
+                                title="Click to filter Users"
+                            >
                                 <div className="stat-card-inner">
                                     <div className="stat-icon-box icon-users">
                                         <FaUsers />
@@ -411,7 +490,12 @@ export const Admin = () => {
                                 </div>
                             </div>
 
-                            <div className="admin-stat-card stat-places">
+                            <div 
+                                className={`admin-stat-card stat-places ${activeSection === "places" ? "active-stat" : ""}`}
+                                onClick={() => setActiveSection(activeSection === "places" ? "dashboard" : "places")}
+                                style={{ cursor: "pointer" }}
+                                title="Click to filter Places"
+                            >
                                 <div className="stat-card-inner">
                                     <div className="stat-icon-box icon-places">
                                         <FaStore />
@@ -426,7 +510,12 @@ export const Admin = () => {
                                 </div>
                             </div>
 
-                            <div className="admin-stat-card stat-reserve">
+                            <div 
+                                className={`admin-stat-card stat-reserve ${activeSection === "reservations" ? "active-stat" : ""}`}
+                                onClick={() => setActiveSection(activeSection === "reservations" ? "dashboard" : "reservations")}
+                                style={{ cursor: "pointer" }}
+                                title="Click to filter Reservations"
+                            >
                                 <div className="stat-card-inner">
                                     <div className="stat-icon-box icon-reserve">
                                         <FaCalendarCheck />
@@ -441,7 +530,12 @@ export const Admin = () => {
                                 </div>
                             </div>
 
-                            <div className="admin-stat-card stat-reviews">
+                            <div 
+                                className={`admin-stat-card stat-reviews ${activeSection === "reviews" ? "active-stat" : ""}`}
+                                onClick={() => setActiveSection(activeSection === "reviews" ? "dashboard" : "reviews")}
+                                style={{ cursor: "pointer" }}
+                                title="Click to filter Reviews"
+                            >
                                 <div className="stat-card-inner">
                                     <div className="stat-icon-box icon-reviews">
                                         <FaStar />
@@ -457,259 +551,347 @@ export const Admin = () => {
                             </div>
                         </div>
 
+                        {/* Quick Section Filter Bar */}
+                        <div className="admin-filter-tabs mb-4 d-flex flex-wrap gap-2">
+                            <button 
+                                className={`btn btn-sm ${activeSection === "dashboard" ? "btn-primary" : "btn-outline-secondary"}`}
+                                onClick={() => setActiveSection("dashboard")}
+                            >
+                                Show All
+                            </button>
+                            <button 
+                                className={`btn btn-sm ${activeSection === "places" ? "btn-primary" : "btn-outline-secondary"}`}
+                                onClick={() => setActiveSection("places")}
+                            >
+                                Places ({filteredPlaces.length})
+                            </button>
+                            <button 
+                                className={`btn btn-sm ${activeSection === "categories" ? "btn-primary" : "btn-outline-secondary"}`}
+                                onClick={() => setActiveSection("categories")}
+                            >
+                                Categories ({allcat.length})
+                            </button>
+                            <button 
+                                className={`btn btn-sm ${activeSection === "users" ? "btn-primary" : "btn-outline-secondary"}`}
+                                onClick={() => setActiveSection("users")}
+                            >
+                                Users ({filteredUsers.length})
+                            </button>
+                            <button 
+                                className={`btn btn-sm ${activeSection === "reviews" ? "btn-primary" : "btn-outline-secondary"}`}
+                                onClick={() => setActiveSection("reviews")}
+                            >
+                                Reviews ({filteredReviews.length})
+                            </button>
+                            <button 
+                                className={`btn btn-sm ${activeSection === "reservations" ? "btn-primary" : "btn-outline-secondary"}`}
+                                onClick={() => setActiveSection("reservations")}
+                            >
+                                Reservations ({filteredReservations.length})
+                            </button>
+                        </div>
+
                         {/* Manage Places Section */}
-                        <section className="admin-card-section" id="places">
-                            <AdminSectionHead title="Manage Workspaces & Places" count={filteredPlaces.length} icon={<FaStore />} />
-                            
-                            <div className="admin-table-card">
-                                <div className="table-responsive">
-                                    <table className="table admin-custom-table align-middle mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>Place Name</th>
-                                                <th>Address</th>
-                                                <th>City</th>
-                                                <th className="text-end">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {paginatedPlaces.length > 0 ? (
-                                                paginatedPlaces.map((a) => (
-                                                    <tr key={a._id || a.Placename}>
-                                                        <td className="fw-bold text-dark">
-                                                            <div className="d-flex align-items-center gap-2">
-                                                                <span className="place-avatar-badge">{a.Placename ? a.Placename.charAt(0) : "P"}</span>
-                                                                <span>{a.Placename}</span>
-                                                            </div>
-                                                        </td>
-                                                        <td className="text-secondary">{a.Address || "No address provided"}</td>
-                                                        <td>
-                                                            <span className="city-pill">{a.City || "General"}</span>
-                                                        </td>
-                                                        <td className="text-end">
-                                                            <button 
-                                                                className="btn-action-delete" 
-                                                                onClick={() => removeplace(a._id)}
-                                                                title="Delete place"
-                                                            >
-                                                                <FaTrash /> Remove
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            ) : (
-                                                <EmptyTableRow colSpan={4} text="No matching places found." />
-                                            )}
-                                        </tbody>
-                                    </table>
+                        {(activeSection === "dashboard" || activeSection === "places") && (
+                            <section className="admin-card-section mb-4" id="places">
+                                <AdminSectionHead title="Manage Workspaces & Places" count={filteredPlaces.length} icon={<FaStore />} />
+                                
+                                <div className="admin-table-card">
+                                    <div className="table-responsive">
+                                        <table className="table admin-custom-table align-middle mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Place Name</th>
+                                                    <th>Address</th>
+                                                    <th>City</th>
+                                                    <th className="text-end">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {paginatedPlaces.length > 0 ? (
+                                                    paginatedPlaces.map((a) => (
+                                                        <tr key={a._id || a.Placename}>
+                                                            <td className="fw-bold text-emphasis">
+                                                                <div className="d-flex align-items-center gap-2">
+                                                                    <span className="place-avatar-badge">{a.Placename ? a.Placename.charAt(0) : "P"}</span>
+                                                                    <span>{a.Placename}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="text-secondary">{a.Address || "No address provided"}</td>
+                                                            <td>
+                                                                <span className="city-pill">{a.City || "General"}</span>
+                                                            </td>
+                                                            <td className="text-end">
+                                                                <button 
+                                                                    className="btn-action-delete" 
+                                                                    onClick={() => removeplace(a._id)}
+                                                                    title="Delete place"
+                                                                >
+                                                                    <FaTrash /> Remove
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                ) : (
+                                                    <EmptyTableRow colSpan={4} text="No matching places found." />
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <PaginationControls 
+                                        currentPage={placesPage} 
+                                        totalItems={filteredPlaces.length} 
+                                        itemsPerPage={ITEMS_PER_PAGE} 
+                                        onPageChange={setPlacesPage} 
+                                    />
                                 </div>
-                                <PaginationControls 
-                                    currentPage={placesPage} 
-                                    totalItems={filteredPlaces.length} 
-                                    itemsPerPage={ITEMS_PER_PAGE} 
-                                    onPageChange={setPlacesPage} 
-                                />
-                            </div>
-                        </section>
+                            </section>
+                        )}
 
                         {/* Manage Categories Section */}
-                        <section className="admin-card-section" id="categories">
-                            <AdminSectionHead title="Workspace Categories" count={allcat.length} icon={<FaTag />} />
-                            
-                            <div className="categories-grid-container">
-                                {allcat.length > 0 ? (
-                                    allcat.map((a) => (
-                                        <div className="category-item-card" key={a._id || a.Type}>
-                                            <div className="category-info">
-                                                <span className="category-icon-bubble"><FaTag /></span>
-                                                <span className="category-title">{a.Type}</span>
+                        {(activeSection === "dashboard" || activeSection === "categories") && (
+                            <section className="admin-card-section mb-4" id="categories">
+                                <AdminSectionHead title="Workspace Categories" count={allcat.length} icon={<FaTag />} />
+                                
+                                <div className="categories-grid-container">
+                                    {allcat.length > 0 ? (
+                                        allcat.map((a) => (
+                                            <div className="category-item-card" key={a._id || a.Type}>
+                                                <div className="category-info">
+                                                    {a.Img ? (
+                                                        <img src={a.Img} alt={a.Type} className="category-thumb-img" style={{ width: '32px', height: '32px', borderRadius: '8px', objectFit: 'cover' }} />
+                                                    ) : (
+                                                        <span className="category-icon-bubble"><FaTag /></span>
+                                                    )}
+                                                    <span className="category-title">{a.Type}</span>
+                                                </div>
+                                                <button 
+                                                    className="btn-category-remove" 
+                                                    title={`Remove category "${a.Type}"`}
+                                                    onClick={() => removecategory(a._id, a.Type)}
+                                                >
+                                                    <FaTrash />
+                                                </button>
                                             </div>
-                                            <button className="btn-category-remove" title="Remove Category">
-                                                <FaTrash />
-                                            </button>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="empty-state-box">No categories configured.</div>
-                                )}
-                            </div>
-                        </section>
+                                        ))
+                                    ) : (
+                                        <div className="empty-state-box">No categories configured.</div>
+                                    )}
+                                </div>
+                            </section>
+                        )}
 
                         {/* Manage Users Section */}
-                        <section className="admin-card-section" id="users">
-                            <AdminSectionHead title="User Accounts Directory" count={filteredUsers.length} icon={<FaUsers />} />
-                            
-                            <div className="admin-table-card">
-                                <div className="table-responsive">
-                                    <table className="table admin-custom-table align-middle mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>User Name</th>
-                                                <th>Email Address</th>
-                                                <th>Account ID</th>
-                                                <th>Role</th>
-                                                <th className="text-end">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {paginatedUsers.length > 0 ? (
-                                                paginatedUsers.map((a) => (
-                                                    <tr key={a._id}>
-                                                        <td>
-                                                            <div className="admin-user-identity">
-                                                                <span className="user-avatar-circle">
-                                                                    {a.Name ? a.Name.charAt(0).toUpperCase() : "U"}
+                        {(activeSection === "dashboard" || activeSection === "users") && (
+                            <section className="admin-card-section mb-4" id="users">
+                                <AdminSectionHead title="User Accounts Directory" count={filteredUsers.length} icon={<FaUsers />} />
+                                
+                                <div className="admin-table-card">
+                                    <div className="table-responsive">
+                                        <table className="table admin-custom-table align-middle mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>User Name</th>
+                                                    <th>Email Address</th>
+                                                    <th>Account ID</th>
+                                                    <th>Role</th>
+                                                    <th className="text-end">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {paginatedUsers.length > 0 ? (
+                                                    paginatedUsers.map((a) => (
+                                                        <tr key={a._id}>
+                                                            <td>
+                                                                <div className="admin-user-identity">
+                                                                    <span className="user-avatar-circle">
+                                                                        {a.Name ? a.Name.charAt(0).toUpperCase() : "U"}
+                                                                    </span>
+                                                                    <span className="fw-semibold text-emphasis">{a.Name || "Unnamed User"}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="text-muted">{a.Email}</td>
+                                                            <td className="user-id-mono">{a._id}</td>
+                                                            <td>
+                                                                <span className={`role-badge ${a.UserType === "admin" ? "role-admin" : a.UserType === "Owner" ? "role-owner" : "role-user"}`}>
+                                                                    {a.UserType || "User"}
                                                                 </span>
-                                                                <span className="fw-semibold text-dark">{a.Name || "Unnamed User"}</span>
-                                                            </div>
-                                                        </td>
-                                                        <td className="text-muted">{a.Email}</td>
-                                                        <td className="user-id-mono">{a._id}</td>
-                                                        <td>
-                                                            <span className={`role-badge ${a.UserType === "admin" ? "role-admin" : "role-user"}`}>
-                                                                {a.UserType || "User"}
-                                                            </span>
-                                                        </td>
-                                                        <td className="text-end">
-                                                            <div className="d-flex justify-content-end gap-2">
-                                                                <button 
-                                                                    className="btn-action-delete"
-                                                                    onClick={() => removeuser(a._id)}
-                                                                >
-                                                                    <FaTrash /> Delete
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            ) : (
-                                                <EmptyTableRow colSpan={5} text="No matching user accounts found." />
-                                            )}
-                                        </tbody>
-                                    </table>
+                                                            </td>
+                                                            <td className="text-end">
+                                                                <div className="d-flex justify-content-end gap-2">
+                                                                    <button 
+                                                                        className="btn-action-delete"
+                                                                        onClick={() => removeuser(a._id)}
+                                                                        title="Delete user"
+                                                                    >
+                                                                        <FaTrash /> Delete
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                ) : (
+                                                    <EmptyTableRow colSpan={5} text="No matching user accounts found." />
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <PaginationControls 
+                                        currentPage={usersPage} 
+                                        totalItems={filteredUsers.length} 
+                                        itemsPerPage={ITEMS_PER_PAGE} 
+                                        onPageChange={setUsersPage} 
+                                    />
                                 </div>
-                                <PaginationControls 
-                                    currentPage={usersPage} 
-                                    totalItems={filteredUsers.length} 
-                                    itemsPerPage={ITEMS_PER_PAGE} 
-                                    onPageChange={setUsersPage} 
-                                />
-                            </div>
-                        </section>
+                            </section>
+                        )}
 
                         {/* User Reviews & Feedback */}
-                        <section className="admin-card-section" id="reviews">
-                            <AdminSectionHead title="Community Reviews & Feedback" count={filteredReviews.length} icon={<FaStar />} />
-                            
-                            <div className="reviews-grid">
-                                {filteredReviews.length > 0 ? (
-                                    filteredReviews.map((a) => (
-                                        <div className="admin-review-card-item" key={a._id || `${a.Email}-${a.UserID}`}>
-                                            <div className="review-card-header">
-                                                <div className="review-author-box">
-                                                    <div className="author-avatar">
-                                                        {a.Name ? a.Name.charAt(0).toUpperCase() : "R"}
+                        {(activeSection === "dashboard" || activeSection === "reviews") && (
+                            <section className="admin-card-section mb-4" id="reviews">
+                                <AdminSectionHead title="Community Reviews & Feedback" count={filteredReviews.length} icon={<FaStar />} />
+                                
+                                <div className="reviews-grid">
+                                    {filteredReviews.length > 0 ? (
+                                        filteredReviews.map((a) => (
+                                            <div className="admin-review-card-item" key={a._id || `${a.Email}-${a.UserID}`}>
+                                                <div className="review-card-header">
+                                                    <div className="review-author-box">
+                                                        <div className="author-avatar">
+                                                            {a.Name ? a.Name.charAt(0).toUpperCase() : "R"}
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="author-name">{a.Name || "Anonymous"}</h4>
+                                                            <p className="author-email">{a.Email}</p>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <h4 className="author-name">{a.Name || "Anonymous"}</h4>
-                                                        <p className="author-email">{a.Email}</p>
+                                                    <div className="review-stars">
+                                                        <Rating 
+                                                            initialValue={parseFloat(a.Rating) || 5} 
+                                                            allowFraction 
+                                                            readonly 
+                                                            size={16} 
+                                                        />
                                                     </div>
                                                 </div>
-                                                <div className="review-stars">
-                                                    <FaStar /><FaStar /><FaStar /><FaStar /><FaStar />
+                                                <div className="review-body">
+                                                    <FaQuoteLeft className="quote-icon" />
+                                                    <p className="review-text">{a.Msg || "No feedback message provided."}</p>
+                                                    {a.Images && a.Images.length > 0 && (
+                                                        <div className="review-admin-images d-flex flex-wrap gap-2 mt-2">
+                                                            {a.Images.map((img, i) => (
+                                                                <img key={i} src={img} alt="review attachment" className="review-admin-thumb" style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '6px' }} />
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="review-footer d-flex justify-content-between align-items-center">
+                                                    <span className="user-id-pill">UserID: {a.UserID}</span>
+                                                    <button 
+                                                        className="btn-action-delete btn-sm"
+                                                        onClick={() => removereview(a._id)}
+                                                        title="Delete review"
+                                                    >
+                                                        <FaTrash /> Delete
+                                                    </button>
                                                 </div>
                                             </div>
-                                            <div className="review-body">
-                                                <FaQuoteLeft className="quote-icon" />
-                                                <p className="review-text">{a.Msg || "No feedback message provided."}</p>
-                                            </div>
-                                            <div className="review-footer">
-                                                <span className="user-id-pill">UserID: {a.UserID}</span>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="empty-state-box w-100">No matching reviews found.</div>
-                                )}
-                            </div>
-                        </section>
+                                        ))
+                                    ) : (
+                                        <div className="empty-state-box w-100">No matching reviews found.</div>
+                                    )}
+                                </div>
+                            </section>
+                        )}
 
                         {/* Table Reservations Management */}
-                        <section className="admin-card-section" id="reservations">
-                            <AdminSectionHead title="Table Reservations & Bookings" count={filteredReservations.length} icon={<FaCalendarCheck />} />
-                            
-                            <div className="admin-table-card">
-                                <div className="table-responsive">
-                                    <table className="table admin-custom-table align-middle mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>Workspace / Place</th>
-                                                <th>Customer Details</th>
-                                                <th>Date & Slot</th>
-                                                <th>Guests</th>
-                                                <th>Status</th>
-                                                <th className="text-end">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {paginatedReservations.length > 0 ? (
-                                                paginatedReservations.map((a) => (
-                                                    <tr key={a._id}>
-                                                        <td className="fw-bold text-dark">{a.Placename || "General Table"}</td>
-                                                        <td>
-                                                            <div className="customer-info-box">
-                                                                <strong>{a.Name || "Guest"}</strong>
-                                                                <div className="text-muted small">{a.Email} | {a.Phone || "N/A"}</div>
-                                                            </div>
-                                                        </td>
-                                                        <td>
-                                                            <div className="date-slot-box">
-                                                                <span className="fw-medium">{a.Date}</span>
-                                                                <small className="text-muted d-block">{a.TimeSlot || "Standard Slot"}</small>
-                                                            </div>
-                                                        </td>
-                                                        <td>
-                                                            <span className="guest-badge">{a.Guests || 1} Guests</span>
-                                                        </td>
-                                                        <td>
-                                                            <span className={`status-pill ${a.Status === "Confirmed" ? "status-confirmed" : "status-pending"}`}>
-                                                                {a.Status || "Pending"}
-                                                            </span>
-                                                        </td>
-                                                        <td className="text-end">
-                                                            <div className="d-flex justify-content-end gap-2">
-                                                                {a.Status !== "Confirmed" && (
-                                                                    <button 
-                                                                        className="btn-action-confirm"
-                                                                        onClick={() => updateReservationStatus(a._id, "Confirmed")}
-                                                                    >
-                                                                        <FaCheck /> Confirm
-                                                                    </button>
+                        {(activeSection === "dashboard" || activeSection === "reservations") && (
+                            <section className="admin-card-section mb-4" id="reservations">
+                                <AdminSectionHead title="Table Reservations & Bookings" count={filteredReservations.length} icon={<FaCalendarCheck />} />
+                                
+                                <div className="admin-table-card">
+                                    <div className="table-responsive">
+                                        <table className="table admin-custom-table align-middle mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Workspace / Place</th>
+                                                    <th>Customer Details</th>
+                                                    <th>Date & Slot</th>
+                                                    <th>Guests</th>
+                                                    <th>Pre-Order</th>
+                                                    <th>Status</th>
+                                                    <th className="text-end">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {paginatedReservations.length > 0 ? (
+                                                    paginatedReservations.map((a) => (
+                                                        <tr key={a._id}>
+                                                            <td className="fw-bold text-emphasis">{a.Placename || "General Table"}</td>
+                                                            <td>
+                                                                <div className="customer-info-box">
+                                                                    <strong>{a.Name || "Guest"}</strong>
+                                                                    <div className="text-muted small">{a.Email} | {a.Phone || "N/A"}</div>
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <div className="date-slot-box">
+                                                                    <span className="fw-medium">{a.Date}</span>
+                                                                    <small className="text-muted d-block">{a.TimeSlot || "Standard Slot"}</small>
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <span className="guest-badge">{a.Guests || 1} Guests</span>
+                                                            </td>
+                                                            <td>
+                                                                {a.PreOrderItems && a.PreOrderItems.length > 0 ? (
+                                                                    <span className="badge bg-success-subtle text-success border border-success-subtle" title={a.PreOrderItems.map(p => `${p.Quantity}x ${p.Name}`).join(", ")}>
+                                                                        {a.PreOrderItems.length} items (${a.PreOrderTotal || 0})
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-muted small">None</span>
                                                                 )}
-                                                                <button 
-                                                                    className="btn-action-delete"
-                                                                    onClick={() => cancelReservationAdmin(a._id)}
-                                                                >
-                                                                    <FaTrash /> Cancel
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            ) : (
-                                                <EmptyTableRow colSpan={6} text="No matching table reservations found." />
-                                            )}
-                                        </tbody>
-                                    </table>
+                                                            </td>
+                                                            <td>
+                                                                <span className={`status-pill ${a.Status === "Confirmed" ? "status-confirmed" : "status-pending"}`}>
+                                                                    {a.Status || "Pending"}
+                                                                </span>
+                                                            </td>
+                                                            <td className="text-end">
+                                                                <div className="d-flex justify-content-end gap-2">
+                                                                    {a.Status !== "Confirmed" && (
+                                                                        <button 
+                                                                            className="btn-action-confirm"
+                                                                            onClick={() => updateReservationStatus(a._id, "Confirmed")}
+                                                                        >
+                                                                            <FaCheck /> Confirm
+                                                                        </button>
+                                                                    )}
+                                                                    <button 
+                                                                        className="btn-action-delete"
+                                                                        onClick={() => cancelReservationAdmin(a._id)}
+                                                                    >
+                                                                        <FaTrash /> Cancel
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                ) : (
+                                                    <EmptyTableRow colSpan={7} text="No matching table reservations found." />
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <PaginationControls 
+                                        currentPage={reservationsPage} 
+                                        totalItems={filteredReservations.length} 
+                                        itemsPerPage={ITEMS_PER_PAGE} 
+                                        onPageChange={setReservationsPage} 
+                                    />
                                 </div>
-                                <PaginationControls 
-                                    currentPage={reservationsPage} 
-                                    totalItems={filteredReservations.length} 
-                                    itemsPerPage={ITEMS_PER_PAGE} 
-                                    onPageChange={setReservationsPage} 
-                                />
-                            </div>
-                        </section>
+                            </section>
+                        )}
                     </section>
                 </div>
             </div>

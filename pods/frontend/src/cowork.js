@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { FaBriefcase, FaCalendarAlt, FaWifi } from "react-icons/fa"
 import { showError, showSuccess } from "./alerts"
+import { getApiUrl } from "./apiConfig"
 
 export const CoworkingSpaces = () => {
 
@@ -11,11 +12,12 @@ const [type,settype]=useState("")
 
 const add=async(e)=>{
     e.preventDefault()
-    const result=await fetch("https://cafefinder-u2me.onrender.com/api/cowork",{
-        method:"post",
-        body:JSON.stringify({name,email,phone,type}),
-        headers:{"Content-type":"application/json;charset=UTF-8"}
-    })
+    try {
+        const result=await fetch(getApiUrl("/api/cowork"),{
+            method:"post",
+            body:JSON.stringify({name,email,phone,type}),
+            headers:{"Content-type":"application/json;charset=UTF-8"}
+        })
     if(result){
         const res=await result.json()
         if(res.statuscode===1){
@@ -28,6 +30,9 @@ const add=async(e)=>{
         else{
             showError("Request Failed", "Please check your details and try again.")
         }
+    }
+    } catch (err) {
+        showError("Error", "Server error while sending request.")
     }
 }
 
@@ -91,23 +96,23 @@ const add=async(e)=>{
                                     ))}
                                 </div>
 
-                                <form className="cowork-form">
+                                <form className="cowork-form" onSubmit={add}>
                                     <div className="row g-3">
                                         <div className="col-md-6">
                                             <label className="form-label">Name</label>
-                                            <input className="form-control" type="text" placeholder="Enter name" onChange={(e)=>setname(e.target.value)} />
+                                            <input className="form-control" type="text" placeholder="Enter name" value={name} onChange={(e)=>setname(e.target.value)} required />
                                         </div>
                                         <div className="col-md-6">
                                             <label className="form-label">Email</label>
-                                            <input className="form-control" type="email" placeholder="Enter email" onChange={(e)=>setemail(e.target.value)} />
+                                            <input className="form-control" type="email" placeholder="Enter email" value={email} onChange={(e)=>setemail(e.target.value)} required />
                                         </div>
                                         <div className="col-md-6">
                                             <label className="form-label">Phone Number</label>
-                                            <input className="form-control" type="tel" placeholder="Enter phone number" onChange={(e)=>setphone(e.target.value)} />
+                                            <input className="form-control" type="tel" placeholder="Enter phone number" value={phone} onChange={(e)=>setphone(e.target.value)} required />
                                         </div>
                                         <div className="col-md-6">
                                             <label className="form-label">Space Type</label>
-                                            <select className="form-select" defaultValue="" onChange={(e)=>settype(e.target.value)}>
+                                            <select className="form-select" value={type} onChange={(e)=>settype(e.target.value)} required>
                                                 <option value="" disabled>Select a space</option>
                                                 <option>Single Desk</option>
                                                 <option>Double Desk</option>
@@ -116,7 +121,7 @@ const add=async(e)=>{
                                             </select>
                                         </div>
                                         <div className="col-12">
-                                            <button className="btn btn-primary w-100 py-2" type="submit" onClick={add}>
+                                            <button className="btn btn-primary w-100 py-2" type="submit">
                                                 Request Space
                                             </button>
                                         </div>

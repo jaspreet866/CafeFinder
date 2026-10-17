@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import { FaHeart, FaRegCommentDots, FaUserCircle, FaCalendarCheck } from "react-icons/fa"
 import { Rating } from "react-simple-star-rating"
 import { showError, showSuccess } from "./alerts"
+import { getApiUrl } from "./apiConfig"
 
 export const Account = () => {
     const navigate = useNavigate()
@@ -37,11 +38,15 @@ export const Account = () => {
     const avatarLetter = userEmail.charAt(0).toUpperCase()
 
     const fetchUserReservations = async (userId) => {
-        const result = await fetch(`https://cafefinder-u2me.onrender.com/api/userreservations/${userId}`)
-        const res = await result.json()
+        try {
+            const result = await fetch(getApiUrl(`/api/userreservations/${userId}`))
+            const res = await result.json()
 
-        if (res.statuscode === 1) {
-            setReservations(res.data)
+            if (res.statuscode === 1) {
+                setReservations(res.data)
+            }
+        } catch (e) {
+            console.error(e)
         }
     }
 
@@ -53,20 +58,28 @@ export const Account = () => {
         }
 
         const showWishlist = async () => {
-            const result = await fetch(`https://cafefinder-u2me.onrender.com/api/favourite/${userId}`)
-            const res = await result.json()
+            try {
+                const result = await fetch(getApiUrl(`/api/favourite/${userId}`))
+                const res = await result.json()
 
-            if (res.statuscode === 1) {
-                setWishlist(res.data)
+                if (res.statuscode === 1) {
+                    setWishlist(res.data)
+                }
+            } catch (e) {
+                console.error(e)
             }
         }
 
         const showReviews = async () => {
-            const result = await fetch(`https://cafefinder-u2me.onrender.com/api/userreviews/${userId}`)
-            const res = await result.json()
+            try {
+                const result = await fetch(getApiUrl(`/api/userreviews/${userId}`))
+                const res = await result.json()
 
-            if (res.statuscode === 1) {
-                setReviews(res.data)
+                if (res.statuscode === 1) {
+                    setReviews(res.data)
+                }
+            } catch (e) {
+                console.error(e)
             }
         }
 
@@ -76,20 +89,24 @@ export const Account = () => {
     }, [user?.id])
 
     const handleCancelReservation = async (resId) => {
-        const result = await fetch(`https://cafefinder-u2me.onrender.com/api/cancelreservation/${resId}`, {
-            method: "delete"
-        })
+        try {
+            const result = await fetch(getApiUrl(`/api/cancelreservation/${resId}`), {
+                method: "delete"
+            })
 
-        if (result.ok) {
-            const res = await result.json()
-            if (res.statuscode === 1) {
-                showSuccess("Reservation Cancelled", "Your table reservation has been cancelled.")
-                if (user?.id) {
-                    fetchUserReservations(user.id)
+            if (result.ok) {
+                const res = await result.json()
+                if (res.statuscode === 1) {
+                    showSuccess("Reservation Cancelled", "Your table reservation has been cancelled.")
+                    if (user?.id) {
+                        fetchUserReservations(user.id)
+                    }
+                } else {
+                    showError("Error", "Could not cancel reservation. Please try again.")
                 }
-            } else {
-                showError("Error", "Could not cancel reservation. Please try again.")
             }
+        } catch (err) {
+            showError("Network Error", "Could not cancel reservation.")
         }
     }
 

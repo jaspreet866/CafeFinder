@@ -1,19 +1,45 @@
 import { useContext, useEffect, useState } from "react";
 import { FaMoon, FaSun } from "react-icons/fa";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Context } from "./usecontext";
+import { getApiUrl } from "./apiConfig";
 import Swal from "sweetalert2";
 
 export const Header = () => {
     const [darkMode, setDarkMode] = useState(() => localStorage.getItem("theme") === "dark");
-    const { id, setid } = useContext(Context);
+    const { id, setid, utype, mail } = useContext(Context);
+    const [pendingCount, setPendingCount] = useState(0);
     const navigate = useNavigate();
+    const location = useLocation();
 
     useEffect(() => {
         document.body.classList.toggle("dark-mode", darkMode);
         document.documentElement.dataset.bsTheme = darkMode ? "dark" : "light";
         localStorage.setItem("theme", darkMode ? "dark" : "light");
     }, [darkMode]);
+
+    useEffect(() => {
+        if (!id || utype !== "Owner") {
+            setPendingCount(0);
+            return;
+        }
+
+        const checkPending = async () => {
+            try {
+                const res = await fetch(getApiUrl(`/api/owner/pending-count/${id}?email=${encodeURIComponent(mail || "")}`));
+                const data = await res.json();
+                if (data.statuscode === 1) {
+                    setPendingCount(data.pendingCount || 0);
+                }
+            } catch (err) {
+                console.error("Error fetching pending requests count:", err);
+            }
+        };
+
+        checkPending();
+        const timer = setInterval(checkPending, 15000);
+        return () => clearInterval(timer);
+    }, [id, mail, utype, location.pathname]);
 
     const toggleTheme = () => {
         setDarkMode((current) => !current);
@@ -80,10 +106,15 @@ export const Header = () => {
                     </button>
 
                     <div className="collapse navbar-collapse d-none d-lg-flex align-items-center" id="navbarSupportedContent">
-                        <ul className="navbar-nav ms-auto mb-2 mb-lg-0 gap-lg-2">
+                        <ul className="navbar-nav ms-auto mb-2 mb-lg-0 gap-lg-2 align-items-center">
                             <li className="nav-item">
-                                <Link to="/" className="nav-link active fw-semibold">
+                                <Link to="/" className={`nav-link fw-semibold ${location.pathname === "/" ? "active" : ""}`}>
                                     Home
+                                </Link>
+                            </li>
+                            <li className="nav-item">
+                                <Link to="/map" className={`nav-link fw-semibold ${location.pathname === "/map" ? "active" : ""}`}>
+                                    📍 Find on Map
                                 </Link>
                             </li>
                             <li className="nav-item dropdown">
@@ -97,7 +128,9 @@ export const Header = () => {
                                 </button>
                                 <ul className="dropdown-menu shadow-sm">
                                     <li><Link className="dropdown-item" to="/cowork">Coworking Spaces</Link></li>
-                                    <li><Link className="dropdown-item" to="/reserve">Reservations</Link></li>
+                                    <li><Link className="dropdown-item" to="/reserve">Table Reservations</Link></li>
+                                    <li><Link className="dropdown-item" to="/bookroom">Room Booking</Link></li>
+                                    <li><Link className="dropdown-item" to="/map">Live Cafe Map</Link></li>
                                 </ul>
                             </li>
                             <li className="nav-item dropdown">
@@ -111,16 +144,37 @@ export const Header = () => {
                                 </button>
                                 <ul className="dropdown-menu shadow-sm dropdown-menu-end">
                                     <li><Link className="dropdown-item" to="/account">My Account</Link></li>
+                                    <li><Link className="dropdown-item" to="/wishlist">Saved Wishlist</Link></li>
+                                    <li><Link className="dropdown-item" to="/owner">Partner / Owner Portal</Link></li>
                                     <li><Link className="dropdown-item" to="/admin">Admin Panel</Link></li>
                                     <li><Link className="dropdown-item" to="/login">Login</Link></li>
                                     <li><Link className="dropdown-item" to="/register">Register</Link></li>
-                                    <li><Link className="dropdown-item" to="/place">Add Place</Link></li>
                                 </ul>
                             </li>
-                            <li className="nav-item">
-                               {
-                                id ? <button className="nav-link active" onClick={handleLogout}>Logout</button>:<Link className="text-decoration-none" to="/login"> <button className=" nav-link active">Login</button></Link>
-                               }
+
+                            {utype === "Owner" && (
+                                <li className="nav-item">
+                                    <Link to="/owner" className="btn btn-sm btn-primary rounded-pill px-3 py-1 position-relative d-inline-flex align-items-center gap-1">
+                                        <span>Partner Portal</span>
+                                        {pendingCount > 0 && (
+                                            <span className="badge rounded-pill bg-danger ms-1 px-2 py-1 shadow-sm" title={`${pendingCount} pending requests`}>
+                                                {pendingCount}
+                                            </span>
+                                        )}
+                                    </Link>
+                                </li>
+                            )}
+
+                            <li className="nav-item ms-lg-1">
+                               {id ? (
+                                    <button className="btn btn-sm btn-outline-danger rounded-pill px-3 py-1" onClick={handleLogout}>
+                                        Logout
+                                    </button>
+                               ) : (
+                                    <Link to="/login" className="btn btn-sm btn-primary rounded-pill px-3 py-1">
+                                        Login
+                                    </Link>
+                               )}
                             </li>
 
                         </ul>
@@ -146,7 +200,6 @@ export const Header = () => {
                     <button type="button" className="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
                 </div>
                 <div className="offcanvas-body">
-                    <input className="form-control rounded-pill mb-4" type="text" placeholder="Search places..." />
                     <button
                         className="theme-toggle theme-toggle-mobile mb-3"
                         type="button"
@@ -159,14 +212,25 @@ export const Header = () => {
                     </button>
                     <nav className="mobile-nav">
                         <Link to="/" className="mobile-nav-link" onClick={closeMobileOffcanvas}>Home</Link>
+                        <Link to="/map" className="mobile-nav-link" onClick={closeMobileOffcanvas}>📍 Live Cafe Map</Link>
                         <Link to="/category" className="mobile-nav-link" onClick={closeMobileOffcanvas}>Explore</Link>
                         <Link to="/cowork" className="mobile-nav-link" onClick={closeMobileOffcanvas}>Coworking Spaces</Link>
-                        <Link to="/reserve" className="mobile-nav-link" onClick={closeMobileOffcanvas}>Reservations</Link>
-                        <Link to="/account" className="mobile-nav-link" onClick={closeMobileOffcanvas}>My Account</Link>
+                        <Link to="/owner" className="mobile-nav-link text-primary fw-bold d-flex justify-content-between align-items-center" onClick={closeMobileOffcanvas}>
+                            <span>Partner Portal</span>
+                            {pendingCount > 0 && (
+                                <span className="badge bg-danger rounded-pill">{pendingCount} new</span>
+                            )}
+                        </Link>
                         <Link to="/admin" className="mobile-nav-link" onClick={closeMobileOffcanvas}>Admin Panel</Link>
-                        <Link to="/login" className="mobile-nav-link" onClick={closeMobileOffcanvas}>Login</Link>
-                        <Link to="/register" className="mobile-nav-link" onClick={closeMobileOffcanvas}>Register</Link>
-                        <Link to="/place" className="mobile-nav-link" onClick={closeMobileOffcanvas}>Add Place</Link>
+                        {id ? (
+                            <button className="btn btn-outline-danger w-100 mt-3" onClick={() => { closeMobileOffcanvas(); handleLogout(); }}>
+                                Logout
+                            </button>
+                        ) : (
+                            <Link to="/login" className="btn btn-primary w-100 mt-3" onClick={closeMobileOffcanvas}>
+                                Login
+                            </Link>
+                        )}
                     </nav>
                 </div>
             </div>

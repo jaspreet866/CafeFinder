@@ -12,6 +12,8 @@ import { CoworkingSpaces } from "./cowork"
 import { Account } from "./account"
 import { Wishlist } from "./wishlist"
 import { Admin } from "./admin"
+import { MapView } from "./mapview"
+import { OwnerPortal } from "./owner"
 
 
 export const Routee=()=>{
@@ -33,6 +35,8 @@ export const Routee=()=>{
             <Route path="/account" element={<Account />} />
             <Route path="/wish" element={<Wishlist></Wishlist>} />
             <Route path="/admin" element={<Admin></Admin>} />
+            <Route path="/map" element={<MapView />} />
+            <Route path="/owner" element={<OwnerPortal />} />
         </Routes>
         
         </>

@@ -3,6 +3,8 @@ import { Link } from "react-router-dom"
 import { Rating } from "react-simple-star-rating"
 import AOS from "aos"
 import { showInfo } from "./alerts"
+import { MapView } from "./mapview"
+import { getApiUrl } from "./apiConfig"
 
 const useTypewriter = (words, speed = 120, delay = 1500) => {
     const [index, setIndex] = useState(0);
@@ -61,47 +63,59 @@ export const Main = () => {
 
 
     const show = async () => {
-        const result = await fetch("https://cafefinder-u2me.onrender.com/api/showplace", {
-            method: "get"
-        })
-        if (result) {
-            const res = await result.json()
-            if (res.statuscode === 1) {
-                setd(res.data)
+        try {
+            const result = await fetch(getApiUrl("/api/showplace"), {
+                method: "get"
+            })
+            if (result) {
+                const res = await result.json()
+                if (res.statuscode === 1) {
+                    setd(res.data)
+                }
+                else {
+                    showInfo("No Places Found", "Please check again after places are added.")
+                }
             }
-            else {
-                showInfo("No Places Found", "Please check again after places are added.")
-            }
+        } catch (e) {
+            console.error(e)
         }
     }
 
     const show3 = async () => {
-        const result = await fetch("https://cafefinder-u2me.onrender.com/api/gamingandcafe", {
-            method: "get"
-        })
-        if (result) {
-            const res = await result.json()
-            if (res.statuscode === 1) {
-                setd3(res.data)
+        try {
+            const result = await fetch(getApiUrl("/api/gamingandcafe"), {
+                method: "get"
+            })
+            if (result) {
+                const res = await result.json()
+                if (res.statuscode === 1) {
+                    setd3(res.data)
+                }
+                else {
+                    showInfo("No Gaming Cafes Found", "Please check again later.")
+                }
             }
-            else {
-                showInfo("No Gaming Cafes Found", "Please check again later.")
-            }
+        } catch (e) {
+            console.error(e)
         }
     }
 
     const show4 = async () => {
-        const result = await fetch("https://cafefinder-u2me.onrender.com/api/getcat", {
-            method: "get"
-        })
-        if (result) {
-            const res = await result.json()
-            if (res.statuscode === 1) {
-                setd4(res.data)
+        try {
+            const result = await fetch(getApiUrl("/api/getcat"), {
+                method: "get"
+            })
+            if (result) {
+                const res = await result.json()
+                if (res.statuscode === 1) {
+                    setd4(res.data)
+                }
+                else {
+                    showInfo("No Categories Found", "Categories will appear here once they are added.")
+                }
             }
-            else {
-                showInfo("No Categories Found", "Categories will appear here once they are added.")
-            }
+        } catch (e) {
+            console.error(e)
         }
     }
     const renderPlaceCard = (a, index) => (
@@ -314,6 +328,9 @@ export const Main = () => {
                 </div>
             </div>
         </section>
+
+        {/* INTERACTIVE MAP & CAFES NEAR ME (Feature #1) */}
+        <MapView />
 
         <section className="content-section section-muted process-section">
             <div className="container">
